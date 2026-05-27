@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn-primary {
+    @apply px-5 py-2.5 bg-navy hover:bg-navy-dark text-white font-medium rounded-xl transition duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-navy/50 active:scale-95 flex items-center justify-center gap-2;
+  }
+  
+  .btn-secondary {
+    @apply px-5 py-2.5 bg-blue hover:bg-blue-dark text-white font-medium rounded-xl transition duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue/50 active:scale-95 flex items-center justify-center gap-2;
+  }
+  
+  .btn-outline {
+    @apply px-5 py-2.5 border border-navy hover:bg-navy/5 text-navy font-medium rounded-xl transition duration-200 focus:outline-none focus:ring-2 focus:ring-navy/30 active:scale-95 flex items-center justify-center gap-2;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-navy/30 focus:border-navy outline-none transition duration-200 placeholder-gray-400 text-gray-800 shadow-sm;
+  }
+  
+  .card {
+    @apply bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition duration-300 overflow-hidden;
+  }
+  
+  .badge-pending {
+    @apply px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 border border-yellow-200 flex items-center gap-1.5 w-fit;
+  }
+  
+  .badge-reviewing {
+    @apply px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 border border-blue-200 flex items-center gap-1.5 w-fit;
+  }
+  
+  .badge-approved {
+    @apply px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 border border-green-200 flex items-center gap-1.5 w-fit;
+  }
+  
+  .badge-rejected {
+    @apply px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 border border-red-200 flex items-center gap-1.5 w-fit;
+  }
+}
+
+/* Glassmorphism utility classes */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-dark {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}

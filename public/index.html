@@ -1,9 +1,0 @@
-<!doctype html><html lang="th"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>SIT Scholarship</title><link rel="stylesheet" href="/public/style.css"></head><body>
-<header><h1>SIT KMUTT Scholarship Portal</h1></header>
-<main>
-<section class='card'><h2>Register</h2><input id='rname' placeholder='Name'><input id='remail' placeholder='Email'><input id='rpassword' type='password' placeholder='Password'><select id='rrole'><option value='user'>User</option><option value='admin'>Admin</option></select><button onclick='register()'>Register</button></section>
-<section class='card'><h2>Login</h2><input id='lemail' placeholder='Email'><input id='lpassword' type='password' placeholder='Password'><button onclick='login()'>Login</button><p id='who'></p></section>
-<section class='card'><h2>Scholarships</h2><input id='stitle' placeholder='Title'><input id='samount' placeholder='Amount'><textarea id='sdesc' placeholder='Description'></textarea><button onclick='createScholarship()'>Create (Admin)</button><button onclick='loadScholarships()'>Refresh</button><ul id='scholarships'></ul></section>
-<section class='card'><h2>Applications</h2><input id='appsid' placeholder='Scholarship ID'><input id='appgpa' placeholder='GPA (0-4)'><textarea id='appstatement' placeholder='Statement'></textarea><button onclick='applyScholarship()'>Apply</button><button onclick='loadApplications()'>My Applications</button><ul id='applications'></ul></section>
-<section class='card'><h2>Extra API Demo</h2><button onclick='loadRates()'>Load Exchange Rates</button><pre id='rates'></pre></section>
-</main><script src='/public/app.js'></script></body></html>
