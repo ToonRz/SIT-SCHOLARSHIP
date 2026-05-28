@@ -1,267 +1,114 @@
-สร้างระบบสมัครทุนการศึกษาคณะ SIT KMUTT แบบ Full-Stack บน localhost
-อ้างอิง: https://www.sit.kmutt.ac.th/scholarship-bsc/
+# Requirements Document: SIT Scholarship System
 
-## Tech Stack
-- Frontend: React + Vite + TailwindCSS (port 5173)
-- Backend: Node.js + Express (port 3001)
-- Database: MySQL (XAMPP, root, no password)
-- Auth: JWT + bcrypt
-- HTTP Client: Axios
-- Icons: react-icons (Hi), Notifications: react-hot-toast
-- Font: Kanit (Google Fonts)
+## จากการวิเคราะห์ภาพ (Translated into Requirements)
 
-## Theme
-- Primary: #FA4616 (SIT Orange)
-- Secondary: #FFD100 (KMUTT Gold)
-- Background: #FFFFFF
-- สไตล์โมเดิร์น สะอาดตา เป็นทางการแบบมหาวิทยาลัย, ภาษาไทยทั้ง UI
+---
 
-## Database: sit_scholarship
+## 1. Functional Requirements
 
-### users
-id AUTO_INCREMENT PK, student_id VARCHAR(20) UNIQUE, email VARCHAR(100) UNIQUE NOT NULL, password VARCHAR(255) NOT NULL, first_name VARCHAR(100) NOT NULL, last_name VARCHAR(100) NOT NULL, phone VARCHAR(20), faculty VARCHAR(100) DEFAULT 'School of Information Technology', department VARCHAR(100), year_of_study INT, gpa DECIMAL(3,2), role ENUM('student','admin','committee') DEFAULT 'student', created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP ON UPDATE
+### 1.1 หน้ารายละเอียดทุนการศึกษา (Scholarship Detail Page)
 
-### scholarships
-id AUTO_INCREMENT PK, name VARCHAR(255) NOT NULL, description TEXT, eligibility TEXT, benefits TEXT, required_documents TEXT, application_start DATE, application_end DATE, status ENUM('open','closed','upcoming') DEFAULT 'upcoming', max_recipients INT DEFAULT 0, scholarship_type ENUM('sit-merit','sit-activity','sit-work','kmutt-grant','kmutt-loan','kmutt-special','international') DEFAULT 'sit-merit', category ENUM('sit','kmutt','international') DEFAULT 'sit', created_by INT FK(users.id), created_at TIMESTAMP, updated_at TIMESTAMP
+| ID | Requirement | Priority |
+|---|---|---|
+| FR-01 | ระบบต้องแสดงโลโก้ SIT อย่างถูกต้อง (ปัจจุบันเป็นโลโก้เก่า ต้องเปลี่ยนเป็นโลโก้ปัจจุบันของ SIT) | High |
+| FR-02 | ระบบต้องแสดงแถบเมนูหลัก ประกอบด้วย: หน้าแรก, คุณการศึกษา, มองหาทุน, พิจารณาทุน, จัดกลุ่ม, จัดการผู้ใช้ | High |
+| FR-03 | ระบบต้องแสดงรายละเอียดทุนการศึกษา ประกอบด้วย: ชื่อทุน, คำอธิบาย, คุณสมบัติผู้สมัคร, สิทธิประโยชน์/มูลค่าทุน | High |
+| FR-04 | ระบบต้องแสดงกำหนดเวลาและสิทธิ์ ประกอบด้วย: ช่วงเปิดรับสมัคร (วันที่เริ่ม-สิ้นสุด), จำนวนเปิดรับสมัคร (จำนวนทุน) | High |
+| FR-05 | ระบบต้องมีปุ่ม "ดูรายชื่อนักศึกษาที่สมัครเข้ามา" เพื่อแสดงจำนวนนักศึกษาที่สมัครทุน | High |
+| FR-06 | รายละเอียดน้อย ไม่ครอบคลุม — ระบบต้องแสดงรายละเอียดทุนอย่างครบถ้วน โดยดึงข้อมูลจากแหล่งที่มาเต็มๆ | High |
+| FR-07 | ระบบต้องแสดงสถานะทุน: ทุน SIT / ทุนอื่นๆ / เปิดรับสมัคร (แสดงเป็น Tag/Badge) | Medium |
 
-### applications
-id AUTO_INCREMENT PK, user_id INT FK(users.id) ON DELETE CASCADE, scholarship_id INT FK(scholarships.id) ON DELETE CASCADE, statement TEXT, family_income DECIMAL(12,2), additional_info TEXT, document_url VARCHAR(500), status ENUM('pending','reviewing','approved','rejected') DEFAULT 'pending', admin_comment TEXT, reviewed_by INT FK(users.id), submitted_at TIMESTAMP DEFAULT NOW(), reviewed_at TIMESTAMP NULL, UNIQUE(user_id, scholarship_id)
+---
 
-## Seed Data (ข้อมูลจริงจาก SIT KMUTT)
+### 1.2 ระบบ AI ดึงข้อมูลนักศึกษา (AI Student Data Retrieval)
 
-Admin: admin@sit.kmutt.ac.th / admin123 (bcrypt hash, role=admin)
+| ID | Requirement | Priority |
+|---|---|---|
+| FR-08 | ระบบ AI ต้องดึงข้อมูลนักศึกษาโดยให้รายการครบทุกคน แต่เฉพาะค่าที่หาทุนได้ | High |
+| FR-09 | ข้อมูลที่ไม่หามาเฉพาะได้ เช่น: ชื่อ-สกุล, เพศ, เบอร์โทร, หมู่, เบอร์มด, ที่อยู่ ฯลฯ — ต้องปฏิบัติตาม **PDPA** (มี 2 ประกาศ) | Critical |
+| FR-10 | ข้อมูลทางวิชาการที่ AI ต้องดึงได้: **GPA**, รายได้ต่อปี, ปีการศึกษา, ภาคเรียน | High |
+| FR-11 | หน้ารายละเอียดทุนต้องไม่แสดงเปล่า — ถ้า AI นิสิตจะได้เข้าไปเปลี่ยนแปลงง่ายๆ (UX Improvement) | Medium |
 
-### กลุ่ม 1: ทุนคณะ SIT (category='sit')
+---
 
-1. **ทุนเรียนดี SIT** (sit-merit/open)
-   - มอบเป็นรางวัลสำหรับนักศึกษาผลการเรียนโดดเด่น ส่งเสริมจิตอาสาแบ่งปันความรู้
-   - คุณสมบัติ: นักศึกษา SIT ระดับ ป.ตรี, พิจารณาเรียงตาม GPAX, ประพฤติดี
-   - สิทธิประโยชน์: ตามงบประมาณแต่ละปี พิจารณาเรียงตามเกรด
+### 1.3 ระบบข้อมูลนักศึกษา (Student Information Module)
 
-2. **ทุนกิจกรรมเด่น SIT** (sit-activity/open)
-   - มอบให้นักศึกษาสร้างชื่อเสียงจากการประกวด/รางวัลด้าน IT หรือคอมพิวเตอร์
-   - ยื่นขอได้ตลอดปีการศึกษา ภายใน 6 เดือนหลังได้รับรางวัล
-   - ต้องแนบหลักฐานรางวัล/ผลงาน
+| ID | Requirement | Priority |
+|---|---|---|
+| FR-12 | ระบบต้องรองรับการกรอกรหัสนักศึกษา โดยสร้างเองใน Database (2 คน ผ่านๆ ไม่มีปัญหา) — ต้องมีช่อง: **รหัส นศ.** และ **รหัส** (สมัคร) | High |
+| FR-13 | ระบบต้องดึงข้อมูลนักศึกษาตามฟิลด์ที่กรอก | High |
+| FR-14 | ระบบต้องรองรับ **การจำลองโปรไฟล์สมัครทุน** แบบง่ายๆ | Medium |
 
-3. **ทุนจ้างงาน SIT** (sit-work/open)
-   - ส่งเสริมใช้เวลาว่างให้เกิดประโยชน์ มีรายได้ระหว่างเรียน
-   - ค่าตอบแทน 50 บาท/ชม. (สูงสุด 300 บาท/วัน, 2,000 บาท/สัปดาห์)
-   - วงเงินรวม: ภาคปกติ 6,000 บาท / ภาคพิเศษ 10,000 บาท
+---
 
-### กลุ่ม 2: ทุนมหาวิทยาลัย มจธ. (category='kmutt')
+### 1.4 การ์ดทุนและเอกสารแนบ (Scholarship Card & Document Upload)
 
-4. **ทุนเพชรพระจอมเกล้า** (kmutt-grant/open)
-   - ศักยภาพสูงด้านวิชาการ+ความสามารถเฉพาะด้าน
-   - ครอบคลุม: ค่าเล่าเรียน + ค่าอุปกรณ์แรกเข้า 30,000 บาท + ค่าครองชีพ 4,000 บาท/เดือน
+| ID | Requirement | Priority |
+|---|---|---|
+| FR-15 | การ์ดทุนมีปัญหา — ไม่มีเอกสาร **.pdf** เช่น เห็นเอกสารเตือนว่า ไม่ครบ | High |
+| FR-16 | ระบบต้องรองรับฟอร์มรับสมัครทุน (ไม่ตามในรูปข้อมูล SIT) | High |
+| FR-17 | ต้องมีปุ่ม **"เพิ่มเอกสาร"** สำหรับอัปโหลดไฟล์ **.pdf** | High |
+| FR-18 | ต้องมีปุ่ม **"SUBMIT BUTTON"** สำหรับส่งใบสมัคร | High |
+| FR-19 | ระบบต้องแสดง **Error** เมื่อเอกสารแนบไม่ครบ/ไม่ถูกต้อง ก่อนอนุญาตให้ Submit | High |
 
-5. **ทุนธรรมรักษา** (kmutt-grant/open)
-   - ขาดแคลนทุนทรัพย์ พื้นที่ทุรกันดาร ไม่มีคนในครอบครัวจบ ป.ตรี
-   - ค่าเล่าเรียน + ค่าครองชีพ 4,000 บาท/เดือน + ค่าอุปกรณ์ 10,000 บาท/ปี
+---
 
-6. **ทุน กยศ. ลักษณะที่ 1** (kmutt-loan/open)
-   - สำหรับผู้ขาดแคลนทุนทรัพย์
-   - กู้ค่าเล่าเรียนตามจริง + ค่าครองชีพ 3,000 บาท/เดือน
+### 1.5 ข้อมูลนักศึกษาที่แก้ไขได้/ไม่ได้ (Student Profile — Editable vs. Read-only)
 
-7. **ทุน กยศ. ลักษณะที่ 2** (kmutt-loan/open)
-   - สำหรับสาขาวิชาที่เป็นความต้องการหลัก
-   - กู้ค่าเล่าเรียนตามจริง + ค่าครองชีพ 3,000 บาท/เดือน
+| ID | Requirement | Priority |
+|---|---|---|
+| FR-20 | **ฟิลด์ที่แก้ไขไม่ได้ (Read-only):** รหัสนักศึกษา, คณะ/สาขา, ผลการเรียน, Email มหาลัย, เลขบัตรประจำตัวประชาชน, เพศ, ชื่อ-เดินทาง, เลข, วันเกิด/หน้าศึกษา, วันเดือนปีเกิด, ที่อยู่-น้อง, จากผู้ปกครอง/ที่อยู่, ชื่อ นามสกุล | High |
+| FR-21 | **ฟิลด์ที่แก้ไขได้:** Email (verify ผ่าน Gmail), เพศ/ไหน, รายได้ พ่อ แม่ — ต้องมีปุ่มกดอนุญาตให้แก้ไข | High |
+| FR-22 | ระบบต้องรองรับ **Email Verify** (ยืนยัน Email ผ่าน Gmail) | High |
+| FR-23 | ไม่มี check จันทร์ที่ยังไม่ได้มีกล่มให้เพิ่ม — ถ้าเป็นบอก Verify ด้วย | Medium |
 
-8. **ทุนให้เปล่า** (kmutt-grant/open)
-   - จากบริษัท/ผู้บริจาคภายนอก
-   - มอบให้ผู้ขาดแคลนหรือเรียนดีตามเงื่อนไขผู้ให้ทุน
+---
 
-9. **ทุนสนับสนุนการศึกษา** (kmutt-special/open)
-   - เดือดร้อนทางการเงินอย่างร้ายแรง
-   - อาจารย์ที่ปรึกษาเป็นผู้เสนอชื่อ
+## 2. Non-Functional Requirements
 
-10. **ทุน Applied Learning 1** (kmutt-special/open)
-    - ทุนประสบการณ์วิจัยและการเรียนรู้ประยุกต์
-    - งานทักษะพิเศษ: พัฒนา Software, Web, Data Analytic
-    - โครงการละไม่เกิน 20,000 บาท
+| ID | Requirement | Priority |
+|---|---|---|
+| NFR-01 | **PDPA Compliance** — ข้อมูลส่วนตัวนักศึกษา (ชื่อ-สกุล, เพศ, เบอร์โทร, ที่อยู่ ฯลฯ) ต้องได้รับการปกป้องตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล (PDPA) มี 2 ประกาศที่เกี่ยวข้อง | Critical |
+| NFR-02 | **UI/UX** — แถบเมนูต้องเรียงแสง (ปรับสีสัน/แสง) ให้เหมาะสมและอ่านง่าย | Medium |
+| NFR-03 | **Usability** — หน้ารายละเอียดทุนต้องแสดงข้อมูลครบถ้วน ไม่ขาดหาย เพื่อให้นักศึกษาเข้าถึงและเปลี่ยนแปลงได้ง่าย | High |
+| NFR-04 | **Data Integrity** — ระบบต้องตรวจสอบความถูกต้องของข้อมูลก่อน Submit (Validation) | High |
+| NFR-05 | **File Format Support** — ระบบต้องรองรับการอัปโหลดเอกสารในรูปแบบ **.pdf** เท่านั้น | High |
 
-11. **ทุน Applied Learning 2** (kmutt-special/open)
-    - งานที่ใช้ทักษะความรู้เสร็จสิ้นในระยะสั้น
+---
 
-12. **ทุนการศึกษาสิริวิริยา** (kmutt-grant/open)
-    - ชั้นปี 2 ขึ้นไป สู้ชีวิต ขยันหมั่นเพียร ขาดทุนทรัพย์
-    - ค่าเล่าเรียน + ค่าครองชีพ 6,000 บาท/เดือน + ค่าอุปกรณ์ 10,000 บาท/ปี
+## 3. UI/UX Issues & Improvement Notes (จากการ Review)
 
-13. **ทุนเจียระไนเพชร** (kmutt-special/open)
-    - ศักยภาพโดดเด่น/สร้างชื่อเสียงให้มหาวิทยาลัย
+| # | Issue | Note |
+|---|---|---|
+| 1 | โลโก้ SIT เป็นโลโก้เก่า | ต้องเปลี่ยนเป็นโลโก้ SIT ปัจจุบัน |
+| 2 | แถบเมนูเรียงแสงไม่ดี | ปรับ contrast/สี ให้เหมาะสม |
+| 3 | รายละเอียดทุนน้อย ไม่ครอบคลุม | ดึงข้อมูลจากแหล่งที่มาเต็มรูปแบบ |
+| 4 | หน้าแสดงว่างเปล่า | ถ้า AI นิสิตจะได้เข้าไปเปลี่ยนแปลงง่ายๆ |
+| 5 | ปุ่มดูจำนวนนักศึกษาที่สมัครเข้ามา | ต้องทำงานได้จริง แสดงข้อมูลถูกต้อง |
 
-14. **ทุนแสดเหลืองเรืองรุ่ง** (kmutt-special/open)
-    - ความสามารถดีเด่นด้านวิชาการ กีฬา ศิลปวัฒนธรรม นวัตกรรม
-    - เป็นผู้นำการเปลี่ยนแปลง
+---
 
-15. **ทุนผู้ประสบอุบัติภัย** (kmutt-special/open)
-    - ครอบครัวประสบภัยธรรมชาติ
-    - วงเงินไม่เกิน 5,000 บาท
+## 4. Data Requirements Summary
 
-### กลุ่ม 3: ทุนนักศึกษาต่างชาติ (category='international')
+### ข้อมูลนักศึกษาที่ต้องจัดการ:
 
-16. **The Petchra Pra Jom Klao Undergraduate Scholarship** (international/open)
-    - นักศึกษาต่างชาติผลการเรียนโดดเด่น GPAX 3.60 ขึ้นไป
+| Category | Fields |
+|---|---|
+| **ข้อมูลพื้นฐาน** | รหัสนักศึกษา, ชื่อ-นามสกุล, เพศ, วันเดือนปีเกิด |
+| **ข้อมูลการศึกษา** | คณะ/สาขา, ผลการเรียน (GPA), ปีการศึกษา, ภาคเรียน, วิทยาเขต |
+| **ข้อมูลติดต่อ** | Email มหาลัย, Email ส่วนตัว (Gmail - ต้อง Verify), เบอร์โทร, ที่อยู่ |
+| **ข้อมูลครอบครัว** | รายได้ พ่อ-แม่, ชื่อผู้ปกครอง, ที่อยู่ผู้ปกครอง |
+| **เอกสาร** | ไฟล์แนบ .pdf (เอกสารประกอบการสมัครทุน) |
 
-17. **Multi-intellectual Scholarship** (international/open)
-    - สำหรับนักศึกษาจาก กัมพูชา ลาว พม่า เวียดนาม (CLMV)
+---
 
-18. **KMUTT International Scholarship Program (KISP)** (international/open)
-    - นักศึกษาต่างชาติจากประเทศอื่นๆ
+## 5. System Context
 
-## API Endpoints
+- **ระบบ:** SIT SCHOLARSHIP (SIT KMUTT Scholarship System)
+- **URL:** localhost (ขณะพัฒนา)
+- **ผู้ใช้:** ผู้ดูแลระบบ SIT KMUTT, นักศึกษา SIT
+- **วิสัยทัศน์:** "Empowering Boundless Digital Transformation"
 
-### Auth (Public)
-POST /api/auth/register → validate(email, password≥6, student_id, first_name, last_name), bcrypt hash, return JWT+user
-POST /api/auth/login → verify bcrypt, return JWT+user
-GET /api/auth/me → [Auth] profile
-PUT /api/auth/profile → [Auth] update own profile
+---
 
-### Scholarships
-GET /api/scholarships → [Public] list all, query: ?status=&type=&category=&search=
-GET /api/scholarships/:id → [Public] detail
-POST /api/scholarships → [Admin] create
-PUT /api/scholarships/:id → [Admin] update
-DELETE /api/scholarships/:id → [Admin] delete
-
-### Applications
-POST /api/applications → [Student] submit (validate: statement≥50, ห้ามสมัครซ้ำ, check scholarship open)
-GET /api/applications/my → [Auth] my applications (JOIN scholarship name)
-GET /api/applications → [Admin/Committee] all (query: ?status=&scholarship_id=, JOIN user+scholarship info)
-GET /api/applications/:id → [Auth] detail (student=own only)
-PUT /api/applications/:id → [Student] edit (pending only)
-DELETE /api/applications/:id → [Student: pending / Admin: any]
-PATCH /api/applications/:id/review → [Admin/Committee] set status(reviewing/approved/rejected) + admin_comment
-
-### Users
-GET /api/users → [Admin] list (query: ?role=&search=)
-GET /api/users/:id → [Admin] detail
-PUT /api/users/:id/role → [Admin] change role
-DELETE /api/users/:id → [Admin] delete (ห้ามลบตัวเอง)
-GET /api/users/stats/dashboard → [Admin] counts: totalUsers, totalScholarships, totalApplications, pending, approved, rejected
-
-## Backend Structure
-server.js → Express, CORS(origin:localhost:5173), JSON body, request logger, mount /api/auth, /api/users, /api/scholarships, /api/applications, health check /api/health
-config/db.js → mysql2/promise pool (localhost, root, '', sit_scholarship)
-middleware/auth.js → authenticateToken(JWT verify from Bearer header), authorizeRoles(...roles)
-middleware/validate.js → express-validator: registerValidation, loginValidation, scholarshipValidation, applicationValidation + handleValidationErrors
-routes/ → auth.js, users.js, scholarships.js, applications.js
-seed.js → bcrypt hash admin password, INSERT admin user + INSERT all 18 scholarships
-.env → PORT=3001, DB_HOST=localhost, DB_USER=root, DB_PASSWORD=, DB_NAME=sit_scholarship, JWT_SECRET=sit_kmutt_2024_secret, JWT_EXPIRES_IN=24h
-
-## Frontend Structure
-
-### AuthContext
-state: user, token, loading
-methods: login(email,pw), register(formData), logout(), fetchProfile()
-helpers: isAdmin(), isStudent(), isCommittee()
-effect: auto fetchProfile on mount if token exists
-localStorage: token, user
-
-### axios.js (API layer)
-baseURL: http://localhost:3001/api
-request interceptor: attach Bearer token from localStorage
-response interceptor: on 401/403 → clear storage, redirect /login
-
-### TailwindCSS
-extend colors: sit-orange(#FA4616), sit-orange-light(#FF6B3D), sit-orange-dark(#D93A10), kmutt-gold(#FFD100), kmutt-gold-light, kmutt-gold-dark
-font: Kanit
-@layer components: btn-primary(orange), btn-secondary(gold), btn-outline(orange border), input-field, card(rounded-xl shadow), badge-pending(yellow), badge-reviewing(blue), badge-approved(green), badge-rejected(red)
-
-### Components
-Navbar → responsive, SIT logo+icon, nav ตาม role(student: หน้าหลัก/ทุน/ใบสมัคร, admin: +จัดการระบบ), user dropdown(ชื่อ/email/role badge/profile link/logout), mobile hamburger
-Footer → SIT info, links(sit.kmutt.ac.th, kmutt.ac.th, scholarship page), ที่อยู่คณะ 126 ประชาอุทิศ บางมด ทุ่งครุ 10140, โทร 02-470-9850
-ProtectedRoute → check user+role, loading spinner, redirect /login
-ScholarshipCard → top gradient bar(orange→gold), category badge(SIT/KMUTT/International + สี), type badge, status dot(open=green/closed=red/upcoming=yellow), name, description(line-clamp-3), benefits preview(gold bg), deadline, arrow link
-
-### Pages
-
-**Home:**
-- Hero: gradient orange bg, decorative blur shapes, badge "คณะเทคโนโลยีสารสนเทศ มจธ.", heading "ทุนการศึกษา SIT KMUTT"(gold), subtitle, 2 CTA buttons(ดูทุน+สมัครสมาชิก)
-- 3 Steps: สมัครสมาชิก→เลือกทุน→กรอกใบสมัคร (numbered cards)
-- ทุนที่เปิดรับ: max 3 cards, "ดูทั้งหมด" link
-
-**Login:**
-- Center card, SIT icon, email+password inputs with icons, frontend validate, submit button, link สมัครสมาชิก
-- Demo credentials box(gold bg): admin@sit.kmutt.ac.th / admin123
-- Redirect: admin→/admin, student→/scholarships
-
-**Register:**
-- 3 sections with numbered badges: (1)ข้อมูลส่วนตัว(ชื่อ/สกุล/รหัสนศ./โทร) (2)การศึกษา(สาขาdropdown:CS/IT/DSI, ชั้นปี1-4, GPA) (3)บัญชี(email/password/confirm)
-- Frontend validate: required fields, email format, password≥6, confirm match, GPA 0-4
-
-**Scholarships:**
-- Header gradient orange
-- Search bar + 3 filters: ประเภททุน(dropdown scholarship_type), หมวดหมู่(tabs: ทั้งหมด/ทุน SIT/ทุน มจธ./ทุนต่างชาติ), สถานะ(dropdown)
-- Results grid 3 cols, count text, empty state
-
-**ScholarshipDetail:**
-- Header gradient + back button + category&type&status badges + title
-- Main(2/3): Description, คุณสมบัติ(green icon), สิทธิประโยชน์(gold bg), เอกสาร(blue icon) - ทุก section whitespace-pre-line
-- Sidebar(1/3): sticky card, วันเปิด-ปิดรับ, จำนวนรับ, ปุ่มสมัคร(student→/apply, guest→/login, non-student→disabled, closed→disabled)
-
-**Apply:** [student]
-- Header gradient + scholarship name
-- Form: เหตุผล(textarea≥50, char count), รายได้ครอบครัว(number), ข้อมูลเพิ่มเติม(textarea), ลิงก์เอกสาร(url, hint: Google Drive)
-- Required documents reminder box(gold bg)
-- Buttons: ยกเลิก(outline) + ส่งใบสมัคร(primary)
-
-**MyApplications:** [student]
-- Header + subtitle
-- List cards: scholarship name + status badge, submitted date(Thai locale), admin comment(if exists, gray bg), view link, delete button(pending only)
-- Empty state: icon + text + link to scholarships
-
-**Profile:** [any auth]
-- Header gradient
-- Avatar circle(orange bg, user icon) + name + email + role badge
-- Edit form: ชื่อ/สกุล/โทร/สาขา/ชั้นปี/GPA
-- Save button
-
-**AdminDashboard:** [admin]
-- Header gradient
-- 6 stat cards(clickable→link): ผู้ใช้(blue)/ทุน(orange)/ใบสมัคร(purple)/รอพิจารณา(yellow)/อนุมัติ(green)/ไม่อนุมัติ(red) - each with icon + count + hover scale
-- Quick actions: 3 cards(จัดการทุน/จัดการใบสมัคร/จัดการผู้ใช้) with icon+description
-
-**AdminScholarships:** [admin]
-- Header + "เพิ่มทุนใหม่" button(white)
-- Table: ชื่อทุน, หมวดหมู่, ประเภท, สถานะ(colored badge), edit+delete buttons
-- Modal form(create/edit): name*, description*(textarea), eligibility, benefits, required_documents, scholarship_type(dropdown), category(dropdown sit/kmutt/international), status(dropdown), max_recipients, application_start/end(date)
-
-**AdminApplications:** [admin/committee]
-- Header
-- Filter tabs: ทั้งหมด/รอพิจารณา/กำลังพิจารณา/อนุมัติ/ไม่อนุมัติ (active=orange bg)
-- List cards: scholarship name + status badge, student info(name/student_id/GPA/department), submitted date, action buttons(view/approve/reject)
-- Detail modal: student full info(name/id/email/GPA/department/year/phone), scholarship name, statement(gray bg), family income, additional info, document link, review section(comment textarea + approve green button + reject red button) - show only for pending/reviewing
-
-**AdminUsers:** [admin]
-- Header
-- Search input
-- Table: ชื่อ-สกุล, รหัสนศ., อีเมล, สาขา, Role(dropdown เปลี่ยนได้เลย: student/committee/admin, colored bg), delete button
-- Footer: total count
-
-### Routes (react-router-dom v6)
-/ → Home
-/login → Login
-/register → Register
-/scholarships → Scholarships
-/scholarships/:id → ScholarshipDetail
-/apply/:scholarshipId → ProtectedRoute[student] → Apply
-/my-applications → ProtectedRoute[student] → MyApplications
-/profile → ProtectedRoute[student,admin,committee] → Profile
-/admin → ProtectedRoute[admin] → AdminDashboard
-/admin/scholarships → ProtectedRoute[admin] → AdminScholarships
-/admin/applications → ProtectedRoute[admin,committee] → AdminApplications
-/admin/users → ProtectedRoute[admin] → AdminUsers
-
-## Requirements Checklist
-1. ✅ CRUD (ทุน/ใบสมัคร/ผู้ใช้)
-2. ✅ Register/Login
-3. ✅ JWT token (Bearer header, 24h expiry)
-4. ✅ bcrypt hash (saltRounds=10, ไม่เก็บ plain text)
-5. ✅ User & Role (student/admin/committee)
-6. ✅ Role-based access (authorizeRoles middleware)
-7. ✅ Clear API endpoints
-8. ✅ Frontend↔Backend (Axios+CORS)
-9. ✅ Real SIT KMUTT scholarship data (18 ทุน 3 กลุ่ม)
-10. ✅ Validation ทั้ง Frontend(form) + Backend(express-validator)
-
-สร้างโค้ดทั้งหมดให้ครบ ทุกไฟล์ พร้อมใช้งานได้ทันที รวมถึง seed.js สำหรับสร้าง admin account + ข้อมูลทุนทั้ง 18 รายการ
+> **หมายเหตุ:** Requirements นี้แปลมาจากภาพ wireframe/screenshot พร้อมบันทึกข้อเสนอแนะที่เขียนด้วยลายมือภาษาไทย บางรายละเอียดอาจต้องยืนยันกับทีมพัฒนาเพิ่มเติม

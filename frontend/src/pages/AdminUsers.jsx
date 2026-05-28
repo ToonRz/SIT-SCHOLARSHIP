@@ -9,6 +9,9 @@ export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [lookupId, setLookupId] = useState('');
+  const [lookupCode, setLookupCode] = useState('');
+  const [lookupResult, setLookupResult] = useState(null);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -31,6 +34,20 @@ export default function AdminUsers() {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     fetchUsers();
+  };
+
+  const handleStudentLookup = async (e) => {
+    e.preventDefault();
+    try {
+      const params = new URLSearchParams();
+      if (lookupId) params.append('student_id', lookupId);
+      if (lookupCode) params.append('application_code', lookupCode);
+      const res = await axiosInstance.get(`/users/lookup?${params}`);
+      setLookupResult(res.data);
+    } catch (error) {
+      setLookupResult(null);
+      toast.error(error.response?.data?.message || 'ไม่พบนักศึกษา');
+    }
   };
 
   const handleRoleChange = async (userId, newRole) => {
@@ -85,6 +102,33 @@ export default function AdminUsers() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-6">
+
+        <div className="card p-4">
+          <h3 className="font-bold text-slate-800 text-sm mb-3">ค้นหานักศึกษาตามรหัส (FR-13)</h3>
+          <form onSubmit={handleStudentLookup} className="flex flex-wrap gap-2">
+            <input
+              className="input-field !py-2 flex-1 min-w-[140px]"
+              placeholder="รหัสนักศึกษา"
+              value={lookupId}
+              onChange={(e) => setLookupId(e.target.value)}
+            />
+            <input
+              className="input-field !py-2 flex-1 min-w-[140px]"
+              placeholder="รหัสสมัคร"
+              value={lookupCode}
+              onChange={(e) => setLookupCode(e.target.value)}
+            />
+            <button type="submit" className="btn-secondary !py-2">ดึงข้อมูล</button>
+          </form>
+          {lookupResult && (
+            <div className="mt-3 text-sm text-gray-600 bg-gray-50 rounded-xl p-3">
+              <strong>{lookupResult.first_name} {lookupResult.last_name}</strong> — {lookupResult.student_id}
+              {lookupResult.application_code && ` / ${lookupResult.application_code}`}
+              <br />
+              {lookupResult.department} ปี {lookupResult.year_of_study} GPA {lookupResult.gpa}
+            </div>
+          )}
+        </div>
         
         {/* Search Container */}
         <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">

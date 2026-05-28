@@ -3,14 +3,47 @@ const router = express.Router();
 const pool = require('../config/db');
 const { authenticateToken, authorizeRoles } = require('../middleware/auth');
 const { applicationValidation } = require('../middleware/validate');
+const { uploadPdf } = require('../middleware/upload');
+const { validateApplicationDocuments } = require('../utils/documents');
 
-// POST /api/applications (Student submit application)
+const parseDocuments = (raw) => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+};
+
+// POST upload PDF (Student)
+router.post('/upload', authenticateToken, authorizeRoles('student'), (req, res) => {
+  uploadPdf.single('file')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ message: err.message || 'อัปโหลดไฟล์ไม่สำเร็จ' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ message: 'กรุณาเลือกไฟล์ PDF' });
+    }
+    return res.status(201).json({
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      url: `/api/uploads/applications/${req.file.filename}`,
+      size: req.file.size,
+    });
+  });
+});
+
+// POST submit application (Student)
 router.post('/', authenticateToken, authorizeRoles('student'), applicationValidation, async (req, res) => {
-  const { scholarship_id, statement, family_income, additional_info, document_url } = req.body;
+  const { scholarship_id, statement, family_income, additional_info, documents } = req.body;
+  const docList = parseDocuments(documents);
 
   try {
-    // 1. Check if scholarship exists and is open
-    const [scholarships] = await pool.query('SELECT status FROM scholarships WHERE id = ?', [scholarship_id]);
+    const [scholarships] = await pool.query(
+      'SELECT status, required_documents FROM scholarships WHERE id = ?',
+      [scholarship_id]
+    );
     if (scholarships.length === 0) {
       return res.status(404).json({ message: 'ไม่พบทุนการศึกษานี้' });
     }
@@ -18,17 +51,36 @@ router.post('/', authenticateToken, authorizeRoles('student'), applicationValida
       return res.status(400).json({ message: 'ทุนการศึกษานี้ไม่ได้เปิดรับสมัครในขณะนี้' });
     }
 
-    // 2. Check if user already applied to this scholarship
-    const [existing] = await pool.query('SELECT id FROM applications WHERE user_id = ? AND scholarship_id = ?', [req.user.id, scholarship_id]);
+    const docCheck = validateApplicationDocuments(scholarships[0].required_documents, docList);
+    if (!docCheck.valid) {
+      return res.status(400).json({
+        message: 'เอกสารแนบไม่ครบถ้วน กรุณาแนบ PDF ให้ครบตามรายการ',
+        missingDocuments: docCheck.missing,
+      });
+    }
+
+    const [existing] = await pool.query(
+      'SELECT id FROM applications WHERE user_id = ? AND scholarship_id = ?',
+      [req.user.id, scholarship_id]
+    );
     if (existing.length > 0) {
       return res.status(400).json({ message: 'คุณได้สมัครทุนการศึกษานี้ไปแล้ว' });
     }
 
-    // 3. Insert application
+    const documentUrl = docList.length > 0 ? docList[0].url : null;
+
     const [result] = await pool.query(
-      `INSERT INTO applications (user_id, scholarship_id, statement, family_income, additional_info, document_url, status)
-       VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
-      [req.user.id, scholarship_id, statement, family_income, additional_info || null, document_url || null]
+      `INSERT INTO applications (user_id, scholarship_id, statement, family_income, additional_info, document_url, documents, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      [
+        req.user.id,
+        scholarship_id,
+        statement,
+        family_income,
+        additional_info || null,
+        documentUrl,
+        JSON.stringify(docList),
+      ]
     );
 
     return res.status(201).json({ message: 'ส่งใบสมัครสำเร็จ', applicationId: result.insertId });
@@ -38,7 +90,6 @@ router.post('/', authenticateToken, authorizeRoles('student'), applicationValida
   }
 });
 
-// GET /api/applications/my (Student's own applications)
 router.get('/my', authenticateToken, authorizeRoles('student'), async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -56,13 +107,12 @@ router.get('/my', authenticateToken, authorizeRoles('student'), async (req, res)
   }
 });
 
-// GET /api/applications (Admin/Committee all applications)
 router.get('/', authenticateToken, authorizeRoles('admin', 'committee'), async (req, res) => {
   const { status, scholarship_id } = req.query;
   let sql = `
-    SELECT a.*, 
+    SELECT a.*,
            s.name as scholarship_name, s.scholarship_type, s.category,
-           u.student_id, u.first_name, u.last_name, u.email, u.phone, u.department, u.year_of_study, u.gpa
+           u.student_id, u.application_code, u.first_name, u.last_name, u.email, u.phone, u.department, u.year_of_study, u.gpa
     FROM applications a
     JOIN scholarships s ON a.scholarship_id = s.id
     JOIN users u ON a.user_id = u.id
@@ -94,13 +144,12 @@ router.get('/', authenticateToken, authorizeRoles('admin', 'committee'), async (
   }
 });
 
-// GET /api/applications/:id (Detail page)
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT a.*, 
+      `SELECT a.*,
              s.name as scholarship_name, s.scholarship_type, s.category, s.required_documents,
-             u.student_id, u.first_name, u.last_name, u.email, u.phone, u.department, u.year_of_study, u.gpa
+             u.student_id, u.application_code, u.first_name, u.last_name, u.email, u.phone, u.department, u.year_of_study, u.gpa
       FROM applications a
       JOIN scholarships s ON a.scholarship_id = s.id
       JOIN users u ON a.user_id = u.id
@@ -114,7 +163,6 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
     const application = rows[0];
 
-    // Authorize: Students can only view their own applications
     if (req.user.role === 'student' && application.user_id !== req.user.id) {
       return res.status(403).json({ message: 'คุณไม่มีสิทธิ์ดูรายละเอียดใบสมัครนี้' });
     }
@@ -126,12 +174,18 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// PUT /api/applications/:id (Student edits pending application)
 router.put('/:id', authenticateToken, authorizeRoles('student'), applicationValidation, async (req, res) => {
-  const { statement, family_income, additional_info, document_url } = req.body;
+  const { statement, family_income, additional_info, documents } = req.body;
+  const docList = parseDocuments(documents);
 
   try {
-    const [existing] = await pool.query('SELECT user_id, status FROM applications WHERE id = ?', [req.params.id]);
+    const [existing] = await pool.query(
+      `SELECT a.user_id, a.status, s.required_documents
+       FROM applications a
+       JOIN scholarships s ON a.scholarship_id = s.id
+       WHERE a.id = ?`,
+      [req.params.id]
+    );
     if (existing.length === 0) {
       return res.status(404).json({ message: 'ไม่พบใบสมัครนี้' });
     }
@@ -144,11 +198,21 @@ router.put('/:id', authenticateToken, authorizeRoles('student'), applicationVali
       return res.status(400).json({ message: 'ไม่สามารถแก้ไขใบสมัครที่อยู่ระหว่างการพิจารณาหรือพิจารณาเสร็จสิ้นแล้ว' });
     }
 
+    const docCheck = validateApplicationDocuments(existing[0].required_documents, docList);
+    if (!docCheck.valid) {
+      return res.status(400).json({
+        message: 'เอกสารแนบไม่ครบถ้วน',
+        missingDocuments: docCheck.missing,
+      });
+    }
+
+    const documentUrl = docList.length > 0 ? docList[0].url : null;
+
     await pool.query(
-      `UPDATE applications 
-       SET statement = ?, family_income = ?, additional_info = ?, document_url = ? 
+      `UPDATE applications
+       SET statement = ?, family_income = ?, additional_info = ?, document_url = ?, documents = ?
        WHERE id = ?`,
-      [statement, family_income, additional_info || null, document_url || null, req.params.id]
+      [statement, family_income, additional_info || null, documentUrl, JSON.stringify(docList), req.params.id]
     );
 
     return res.json({ message: 'แก้ไขใบสมัครสำเร็จ' });
@@ -158,7 +222,6 @@ router.put('/:id', authenticateToken, authorizeRoles('student'), applicationVali
   }
 });
 
-// DELETE /api/applications/:id (Cancel/Delete application)
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const [existing] = await pool.query('SELECT user_id, status FROM applications WHERE id = ?', [req.params.id]);
@@ -185,7 +248,6 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// PATCH /api/applications/:id/review (Admin/Committee updates application evaluation)
 router.patch('/:id/review', authenticateToken, authorizeRoles('admin', 'committee'), async (req, res) => {
   const { status, admin_comment } = req.body;
   if (!['reviewing', 'approved', 'rejected'].includes(status)) {
@@ -199,7 +261,7 @@ router.patch('/:id/review', authenticateToken, authorizeRoles('admin', 'committe
     }
 
     await pool.query(
-      `UPDATE applications 
+      `UPDATE applications
        SET status = ?, admin_comment = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
       [status, admin_comment || null, req.user.id, req.params.id]

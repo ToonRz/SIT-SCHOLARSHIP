@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { HiOutlineCalendar, HiOutlineArrowRight, HiCurrencyDollar } from 'react-icons/hi';
+import { HiOutlineCalendar, HiOutlineArrowRight, HiCurrencyDollar, HiDocumentText, HiExclamation } from 'react-icons/hi';
+import { parseRequiredDocumentLabels } from '../utils/documents';
 
 export default function ScholarshipCard({ scholarship }) {
-  const { id, name, description, benefits, status, category, scholarship_type, application_end } = scholarship;
+  const { id, name, description, benefits, status, category, scholarship_type, application_end, required_documents } = scholarship;
 
   const getCategoryDetails = (cat) => {
     switch (cat) {
@@ -46,6 +47,8 @@ export default function ScholarshipCard({ scholarship }) {
 
   const catDetails = getCategoryDetails(category);
   const statDetails = getStatusDetails(status);
+  const docLabels = parseRequiredDocumentLabels(required_documents);
+  const docCount = docLabels.length;
 
   return (
     <div className="card group flex flex-col h-full bg-white border border-gray-100 hover:shadow-lg transition-all duration-300">
@@ -87,6 +90,18 @@ export default function ScholarshipCard({ scholarship }) {
             <div className="text-xs text-blue-dark font-medium line-clamp-2">
               {benefits}
             </div>
+          </div>
+        )}
+
+        {docCount > 0 && (
+          <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+            <HiDocumentText className="w-4 h-4 text-blue-500" />
+            <span>เอกสาร PDF {docCount} รายการ</span>
+            {status === 'open' && (
+              <span className="text-amber-600 flex items-center gap-0.5" title="ต้องแนบครบก่อน Submit">
+                <HiExclamation className="w-3.5 h-3.5" /> ต้องแนบครบ
+              </span>
+            )}
           </div>
         )}
 

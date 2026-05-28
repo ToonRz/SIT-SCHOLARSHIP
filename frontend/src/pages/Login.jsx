@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { HiMail, HiLockClosed, HiAcademicCap, HiInformationCircle } from 'react-icons/hi';
+import { HiMail, HiLockClosed, HiInformationCircle } from 'react-icons/hi';
+import SitLogo from '../components/SitLogo';
 
 export default function Login() {
   const { login } = useAuth();
@@ -44,9 +45,7 @@ export default function Login() {
       <div className="max-w-md w-full space-y-6">
         {/* Header Icon & Brand */}
         <div className="text-center">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-navy flex items-center justify-center text-white shadow-lg shadow-navy/20">
-            <HiAcademicCap className="w-10 h-10" />
-          </div>
+          <SitLogo className="h-16 w-auto mx-auto" />
           <h2 className="mt-4 text-3xl font-black text-slate-800">เข้าสู่ระบบ</h2>
           <p className="text-gray-500 text-sm mt-1">ระบบรับสมัครทุนการศึกษา คณะเทคโนโลยีสารสนเทศ</p>
         </div>
@@ -96,13 +95,6 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Register Link */}
-          <p className="text-center text-xs text-gray-500 mt-6">
-            ยังไม่มีบัญชีผู้ใช้?{' '}
-            <Link to="/register" className="font-semibold text-navy hover:text-navy-dark hover:underline">
-              สมัครสมาชิกใหม่ที่นี่
-            </Link>
-          </p>
         </div>
 
         {/* Demo Credentials Box */}

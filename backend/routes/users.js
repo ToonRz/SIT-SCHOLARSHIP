@@ -3,6 +3,40 @@ const router = express.Router();
 const pool = require('../config/db');
 const { authenticateToken, authorizeRoles } = require('../middleware/auth');
 
+// Lookup student by student_id or application_code (Admin/Committee) — FR-13
+router.get('/lookup', authenticateToken, authorizeRoles('admin', 'committee'), async (req, res) => {
+  const { student_id, application_code } = req.query;
+  if (!student_id && !application_code) {
+    return res.status(400).json({ message: 'กรุณาระบุรหัสนักศึกษาหรือรหัสสมัคร' });
+  }
+
+  try {
+    let sql = `SELECT id, student_id, application_code, email, first_name, last_name, department,
+      year_of_study, semester, gpa, faculty, campus, role
+      FROM users WHERE role = 'student' AND (`;
+    const params = [];
+    const parts = [];
+    if (student_id) {
+      parts.push('student_id = ?');
+      params.push(student_id);
+    }
+    if (application_code) {
+      parts.push('application_code = ?');
+      params.push(application_code);
+    }
+    sql += parts.join(' OR ') + ')';
+
+    const [rows] = await pool.query(sql, params);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'ไม่พบข้อมูลนักศึกษา' });
+    }
+    return res.json(rows[0]);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการค้นหานักศึกษา' });
+  }
+});
+
 // List all users (Admin only)
 router.get('/', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   const { role, search } = req.query;

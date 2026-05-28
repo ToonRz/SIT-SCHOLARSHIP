@@ -44,6 +44,53 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET scholarship stats — applicant count (Public)
+router.get('/:id/stats', async (req, res) => {
+  try {
+    const [scholarship] = await pool.query('SELECT id, max_recipients FROM scholarships WHERE id = ?', [req.params.id]);
+    if (scholarship.length === 0) {
+      return res.status(404).json({ message: 'ไม่พบทุนการศึกษานี้' });
+    }
+    const [countRows] = await pool.query(
+      'SELECT COUNT(*) AS applicant_count FROM applications WHERE scholarship_id = ?',
+      [req.params.id]
+    );
+    const applicantCount = countRows[0].applicant_count;
+    const maxRecipients = scholarship[0].max_recipients || 0;
+    return res.json({
+      applicant_count: applicantCount,
+      max_recipients: maxRecipients,
+      slots_remaining: maxRecipients > 0 ? Math.max(0, maxRecipients - applicantCount) : null,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการดึงสถิติผู้สมัคร' });
+  }
+});
+
+// GET applicants list (Admin/Committee)
+router.get('/:id/applicants', authenticateToken, authorizeRoles('admin', 'committee'), async (req, res) => {
+  try {
+    const [scholarship] = await pool.query('SELECT id, name FROM scholarships WHERE id = ?', [req.params.id]);
+    if (scholarship.length === 0) {
+      return res.status(404).json({ message: 'ไม่พบทุนการศึกษานี้' });
+    }
+    const [rows] = await pool.query(
+      `SELECT a.id, a.status, a.submitted_at,
+              u.student_id, u.application_code, u.first_name, u.last_name, u.department, u.year_of_study, u.gpa
+       FROM applications a
+       JOIN users u ON a.user_id = u.id
+       WHERE a.scholarship_id = ?
+       ORDER BY a.submitted_at DESC`,
+      [req.params.id]
+    );
+    return res.json({ scholarship: scholarship[0], applicants: rows, total: rows.length });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการดึงรายชื่อผู้สมัคร' });
+  }
+});
+
 // GET scholarship by ID (Public)
 router.get('/:id', async (req, res) => {
   try {

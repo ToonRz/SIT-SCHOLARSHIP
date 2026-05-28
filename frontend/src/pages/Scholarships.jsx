@@ -1,27 +1,33 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../api/axios';
 import ScholarshipCard from '../components/ScholarshipCard';
-import { HiSearch, HiAdjustments, HiExclamation } from 'react-icons/hi';
+import { HiSearch, HiExclamation, HiSparkles, HiX, HiExternalLink } from 'react-icons/hi';
+import { useAuth } from '../context/AuthContext';
 
 export default function Scholarships() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [scholarships, setScholarships] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Filters State
   const [search, setSearch] = useState('');
   const [type, setType] = useState('');
-  const [category, setCategory] = useState(''); // 'sit', 'kmutt', 'international', or ''
-  const [status, setStatus] = useState('');
+
+  // AI Modal State
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [recommendations, setRecommendations] = useState([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
 
   const fetchScholarships = async () => {
     setLoading(true);
     try {
-      // Build query string
       const params = new URLSearchParams();
       if (search) params.append('search', search);
       if (type) params.append('type', type);
-      if (category) params.append('category', category);
-      if (status) params.append('status', status);
+      params.append('category', 'sit'); // Only SIT scholarships
 
       const res = await axiosInstance.get(`/scholarships?${params.toString()}`);
       setScholarships(res.data);
@@ -33,30 +39,52 @@ export default function Scholarships() {
   };
 
   useEffect(() => {
-    // Debounce search input or fetch instantly on filter change
     fetchScholarships();
-  }, [category, type, status]);
+  }, [type]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     fetchScholarships();
   };
 
+  const handleAIAnalyze = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setAiLoading(true);
+    setAiError('');
+    setRecommendations([]);
+    try {
+      const res = await axiosInstance.get('/recommendations');
+      setRecommendations(res.data);
+      setShowAIModal(true);
+    } catch (error) {
+      if (error.response?.data?.requiresProfile) {
+        setAiError('กรุณากรอก GPA และชั้นปีในโปรไฟล์ก่อน');
+      } else {
+        setAiError('เกิดข้อผิดพลาดในการวิเคราะห์ กรุณาลองใหม่อีกครั้ง');
+      }
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-navy via-navy-light to-blue py-12 px-4 text-white text-center">
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">รายการทุนการศึกษาทั้งหมด</h1>
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">ทุนการศึกษา SIT</h1>
         <p className="text-sm md:text-base text-white/80 mt-1 max-w-xl mx-auto">
-          ค้นหาและเลือกทุนการศึกษาที่สอดคล้องกับความสนใจและคุณสมบัติของคุณ
+          ทุนการศึกษาสำหรับนักศึกษาคณะเทคโนโลยีสารสนเทศ มจธ.
         </p>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow">
         {/* Search & Filters Container */}
         <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm mb-8 space-y-6">
-          {/* Row 1: Search form */}
-          <form onSubmit={handleSearchSubmit} className="flex gap-2">
+          {/* Row 1: Search form + AI Button */}
+          <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-grow">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
                 <HiSearch className="w-5 h-5" />
@@ -72,88 +100,77 @@ export default function Scholarships() {
             <button type="submit" className="btn-primary !px-6 !py-2.5 shrink-0">
               ค้นหา
             </button>
+            <button
+              type="button"
+              onClick={handleAIAnalyze}
+              disabled={aiLoading}
+              className="btn-secondary !px-4 !py-2.5 shrink-0 flex items-center gap-2"
+            >
+              {aiLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-sit-orange border-t-transparent rounded-full animate-spin"></div>
+                  <span className="hidden sm:inline">กำลังวิเคราะห์...</span>
+                </>
+              ) : (
+                <>
+                  <HiSparkles className="w-5 h-5" />
+                  <span className="hidden sm:inline">วิเคราะห์ด้วย AI</span>
+                </>
+              )}
+            </button>
           </form>
 
-          {/* Row 2: Category Tabs & Select Filters */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-2">
-            {/* Category Tabs */}
-            <div className="flex border-b border-gray-100 pb-1 overflow-x-auto space-x-2">
+          {/* Error message */}
+          {aiError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+              <HiExclamation className="w-5 h-5 text-red-500 shrink-0" />
+              <p className="text-sm text-red-700">{aiError}</p>
+            </div>
+          )}
+
+          {/* Row 2: Type filter */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-gray-500">ประเภท:</span>
+            <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => setCategory('')}
-                className={`px-4 py-2 font-semibold text-sm rounded-xl transition duration-150 shrink-0 ${
-                  category === '' ? 'bg-navy text-white' : 'text-gray-500 hover:bg-gray-50'
+                onClick={() => setType('')}
+                className={`px-4 py-2 font-semibold text-sm rounded-xl transition duration-150 ${
+                  type === '' ? 'bg-navy text-white' : 'text-gray-500 hover:bg-gray-50 border border-gray-200'
                 }`}
               >
                 ทั้งหมด
               </button>
               <button
-                onClick={() => setCategory('sit')}
-                className={`px-4 py-2 font-semibold text-sm rounded-xl transition duration-150 shrink-0 ${
-                  category === 'sit' ? 'bg-navy text-white' : 'text-gray-500 hover:bg-gray-50'
+                onClick={() => setType('sit-merit')}
+                className={`px-4 py-2 font-semibold text-sm rounded-xl transition duration-150 ${
+                  type === 'sit-merit' ? 'bg-navy text-white' : 'text-gray-500 hover:bg-gray-50 border border-gray-200'
                 }`}
               >
-                ทุน SIT
+                ทุนเรียนดี
               </button>
               <button
-                onClick={() => setCategory('kmutt')}
-                className={`px-4 py-2 font-semibold text-sm rounded-xl transition duration-150 shrink-0 ${
-                  category === 'kmutt' ? 'bg-navy text-white' : 'text-gray-500 hover:bg-gray-50'
+                onClick={() => setType('sit-activity')}
+                className={`px-4 py-2 font-semibold text-sm rounded-xl transition duration-150 ${
+                  type === 'sit-activity' ? 'bg-navy text-white' : 'text-gray-500 hover:bg-gray-50 border border-gray-200'
                 }`}
               >
-                ทุน มจธ.
+                ทุนกิจกรรมดีเด่น
               </button>
               <button
-                onClick={() => setCategory('international')}
-                className={`px-4 py-2 font-semibold text-sm rounded-xl transition duration-150 shrink-0 ${
-                  category === 'international' ? 'bg-navy text-white' : 'text-gray-500 hover:bg-gray-50'
+                onClick={() => setType('sit-work')}
+                className={`px-4 py-2 font-semibold text-sm rounded-xl transition duration-150 ${
+                  type === 'sit-work' ? 'bg-navy text-white' : 'text-gray-500 hover:bg-gray-50 border border-gray-200'
                 }`}
               >
-                ทุนต่างชาติ
+                ทุนจ้างงาน
               </button>
-            </div>
-
-            {/* Select options */}
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Type filter */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-gray-500">ประเภท:</span>
-                <select
-                  className="input-field !py-2 !px-3 text-xs w-40"
-                  value={type}
-                  onChange={(e) => setType(e.target.value)}
-                >
-                  <option value="">ทั้งหมด</option>
-                  <option value="sit-merit">ทุนเรียนดี</option>
-                  <option value="sit-activity">ทุนกิจกรรมเด่น</option>
-                  <option value="sit-work">ทุนจ้างงาน</option>
-                  <option value="kmutt-grant">ทุนการศึกษาให้เปล่า</option>
-                  <option value="kmutt-loan">ทุนกู้ยืม (กยศ.)</option>
-                  <option value="kmutt-special">ทุนสนับสนุนพิเศษ</option>
-                  <option value="international">ทุนนักศึกษาต่างชาติ</option>
-                </select>
-              </div>
-
-              {/* Status filter */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-gray-500">สถานะ:</span>
-                <select
-                  className="input-field !py-2 !px-3 text-xs w-36"
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                >
-                  <option value="">ทั้งหมด</option>
-                  <option value="open">เปิดรับสมัคร</option>
-                  <option value="closed">ปิดรับสมัคร</option>
-                  <option value="upcoming">เร็วๆ นี้</option>
-                </select>
-              </div>
             </div>
           </div>
         </div>
 
         {/* Results Info */}
         <div className="mb-6 flex justify-between items-center text-sm text-gray-500 font-medium">
-          <p>พบทุนการศึกษาทั้งหมด {scholarships.length} รายการ</p>
+          <p>พบทุนการศึกษา {scholarships.length} รายการ</p>
         </div>
 
         {/* Scholarships Grid */}
@@ -176,6 +193,99 @@ export default function Scholarships() {
           </div>
         )}
       </div>
+
+      {/* AI Recommendations Modal */}
+      {showAIModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-sit-orange to-kmutt-gold p-6 text-white">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <HiSparkles className="w-6 h-6" />
+                  <h2 className="text-xl font-bold">ทุนที่เหมาะกับคุณ</h2>
+                </div>
+                <button
+                  onClick={() => setShowAIModal(false)}
+                  className="p-2 hover:bg-white/20 rounded-full transition"
+                >
+                  <HiX className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-sm text-white/80 mt-1">AI วิเคราะห์จากข้อมูลโปรไฟล์ของคุณ</p>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto flex-1">
+              {recommendations.length > 0 ? (
+                <div className="space-y-4">
+                  {recommendations.map((rec, index) => (
+                    <div
+                      key={rec.id}
+                      className="border border-gray-100 rounded-xl p-4 hover:shadow-md transition"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 flex-1">
+                          {/* Rank Badge */}
+                          <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                            index === 0 ? 'bg-kmutt-gold' : index === 1 ? 'bg-gray-400' : 'bg-orange-400'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-bold text-slate-800 leading-tight">{rec.name}</h3>
+                            {/* Match Score */}
+                            <div className="mt-1 text-xs text-gray-500">
+                              คะแนนความเหมาะสม: <span className="font-semibold text-sit-orange">{rec.matchScore}%</span>
+                            </div>
+                            {/* Reasons */}
+                            <div className="mt-2 space-y-1">
+                              <p className="text-xs text-gray-500 font-semibold mb-1">เหตุผลที่แนะนำ:</p>
+                              {rec.reasons.map((reason, i) => (
+                                <div key={i} className="flex items-start gap-2">
+                                  <span className="text-sit-orange mt-0.5">•</span>
+                                  <span className="text-sm text-gray-600">{reason}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      {/* View Detail Button */}
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          onClick={() => {
+                            setShowAIModal(false);
+                            navigate(`/scholarships/${rec.id}`);
+                          }}
+                          className="btn-primary !px-4 !py-2 text-sm flex items-center gap-2"
+                        >
+                          <span>ดูรายละเอียด</span>
+                          <HiExternalLink className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">ไม่พบทุนที่เหมาะกับคุณในขณะนี้</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="border-t border-gray-100 p-4 flex justify-end">
+              <button
+                onClick={() => setShowAIModal(false)}
+                className="btn-outline !px-6"
+              >
+                ปิด
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

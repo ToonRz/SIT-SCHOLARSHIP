@@ -13,6 +13,8 @@ export default function Register() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [studentId, setStudentId] = useState('');
+  const [applicationCode, setApplicationCode] = useState('');
+  const [pdpaConsent, setPdpaConsent] = useState(false);
   const [phone, setPhone] = useState('');
   const [department, setDepartment] = useState('IT');
   const [yearOfStudy, setYearOfStudy] = useState(1);
@@ -27,6 +29,10 @@ export default function Register() {
     // Frontend Validations
     if (!firstName || !lastName || !studentId || !email || !password || !confirmPassword) {
       return toast.error('กรุณากรอกข้อมูลในช่องที่จำเป็นให้ครบถ้วน');
+    }
+
+    if (!pdpaConsent) {
+      return toast.error('กรุณายอมรับนโยบาย PDPA ก่อนสมัครสมาชิก');
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -53,12 +59,14 @@ export default function Register() {
         first_name: firstName,
         last_name: lastName,
         student_id: studentId,
+        application_code: applicationCode || null,
         phone,
         department,
         year_of_study: parseInt(yearOfStudy),
         gpa: gpa === '' ? null : parsedGpa,
         email,
-        password
+        password,
+        pdpa_consent: true,
       });
 
       toast.success('สมัครสมาชิกและเข้าสู่ระบบสำเร็จ');
@@ -115,7 +123,7 @@ export default function Register() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-gray-600 block">รหัสนักศึกษา *</label>
+                  <label className="text-xs font-semibold text-gray-600 block">รหัสนักศึกษา (รหัส นศ.) *</label>
                   <input
                     type="text"
                     className="input-field"
@@ -126,6 +134,19 @@ export default function Register() {
                   />
                 </div>
                 <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600 block">รหัสสมัคร</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="รหัสสำหรับยื่นทุน (ถ้ามี)"
+                    value={applicationCode}
+                    onChange={(e) => setApplicationCode(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1 sm:col-span-2">
                   <label className="text-xs font-semibold text-gray-600 block">เบอร์โทรศัพท์</label>
                   <input
                     type="tel"
@@ -233,6 +254,19 @@ export default function Register() {
                 </div>
               </div>
             </div>
+
+            <label className="flex items-start gap-2 text-xs text-gray-600 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-0.5 rounded border-gray-300"
+                checked={pdpaConsent}
+                onChange={(e) => setPdpaConsent(e.target.checked)}
+              />
+              <span>
+                ข้าพเจ้ายอมรับนโยบายคุ้มครองข้อมูลส่วนบุคคล (PDPA) และยินยอมให้ระบบใช้ข้อมูลทางวิชาการ
+                (GPA, ชั้นปี, ภาคเรียน) สำหรับการวิเคราะห์ทุนเท่านั้น — ไม่ส่งชื่อ-ที่อยู่ให้ AI
+              </span>
+            </label>
 
             {/* Submit Button */}
             <button type="submit" disabled={loading} className="btn-primary w-full py-3 mt-6">

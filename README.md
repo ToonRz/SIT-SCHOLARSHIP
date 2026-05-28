@@ -10,6 +10,7 @@
 ### สำหรับนักศึกษา (Student)
 - **ระบบดูทุนการศึกษา:** แยกประเภทตามทุนเรียนดี (SIT Merit), ทุนกิจกรรม (SIT Activity), ทุนจ้างงาน (SIT Work), ทุนให้เปล่า (KMUTT Grant), ทุนกู้ยืม (กยศ.) และทุนต่างชาติ (International)
 - **ระบบสมัครทุน:** กรอกข้อมูลการศึกษา อัปโหลดหลักฐานเอกสาร (GPA, กิจกรรม, รูปภาพ/ไฟล์แนบ) และระบุเหตุผลการสมัคร
+- **ระบบแนะนำทุนการศึกษาด้วย AI (Gemini AI):** วิเคราะห์โปรไฟล์นักศึกษา เช่น GPA ชั้นปี และภาควิชา เพื่อแนะนำทุนการศึกษาที่เหมาะสมที่สุด 3 อันดับแรก
 - **ประวัติการสมัคร:** ตรวจสอบและติดตามสถานะการสมัครของตนเอง (อยู่ระหว่างพิจารณา, อนุมัติ, ไม่อนุมัติ)
 - **โปรไฟล์นักศึกษา:** จัดการข้อมูลส่วนตัวและผลการเรียนเฉลี่ยสะสม (GPAX)
 
@@ -46,6 +47,11 @@
    ```sql
    CREATE DATABASE sit_scholarship CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
    ```
+3. นำเข้าโครงสร้างตารางโดยการรันสคริปต์จากไฟล์ `database/schema.sql` หรือรันผ่าน Terminal:
+   ```bash
+   mysql -u root -p -h localhost -P 3306 < database/schema.sql
+   ```
+   *(หมายเหตุ: สามารถเปลี่ยนโฮสต์และพอร์ต เช่น `-P 3307` ตามสภาพแวดล้อมที่ใช้งานจริง)*
 
 ### 2. การตั้งค่า Backend
 1. เข้าไปที่โฟลเดอร์ `backend`:
@@ -63,10 +69,13 @@
    DB_USER=root
    DB_PASSWORD=your_password
    DB_NAME=sit_scholarship
+   DB_PORT=3306 # พอร์ตของ MySQL (เช่น 3306 หรือ 3307)
    JWT_SECRET=sit_kmutt_2024_secret
    JWT_EXPIRES_IN=24h
+   GEMINI_API_KEY=your_gemini_api_key_here
+   GEMINI_MODEL=gemini-flash-latest
    ```
-4. รันคำสั่ง Seed ข้อมูลเริ่มต้น (โครงสร้าง Table + บัญชีแอดมิน + ทุนการศึกษา 18 ทุน):
+4. รันคำสั่ง Seed ข้อมูลเริ่มต้น (บัญชีผู้ใช้งานจำลองต่าง ๆ + ทุนการศึกษาเริ่มต้น):
    ```bash
    node seed.js
    ```
@@ -99,5 +108,11 @@
 - **Email:** `admin@sit.kmutt.ac.th`
 - **Password:** `admin123`
 
+### คณะกรรมการ (Committee)
+- **Email:** `committee1@sit.kmutt.ac.th`
+- **Password:** `committee123`
+
 ### นักศึกษา (Student)
-- สามารถลงทะเบียนสมัครสมาชิกใหม่ (Register) ผ่านหน้าเว็บเพื่อทดลองใช้งานจริงได้ทันที
+- **Email:** `student1@sit.kmutt.ac.th`
+- **Password:** `student123`
+- *(หรือลงทะเบียนสมัครสมาชิกใหม่ผ่านหน้าเว็บได้ทันที)*

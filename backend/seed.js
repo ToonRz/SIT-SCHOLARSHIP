@@ -5,7 +5,7 @@ const seed = async () => {
   try {
     console.log('Starting seeding process...');
 
-    // Clear existing data (be careful with ordering due to FK constraints)
+    // Clear existing data
     await pool.query('DELETE FROM applications');
     await pool.query('DELETE FROM scholarships');
     await pool.query('DELETE FROM users');
@@ -15,284 +15,131 @@ const seed = async () => {
     await pool.query('ALTER TABLE scholarships AUTO_INCREMENT = 1');
     await pool.query('ALTER TABLE applications AUTO_INCREMENT = 1');
 
-    // Hash admin password
+    // Hash passwords
     const adminPassword = await bcrypt.hash('admin123', 10);
+    const studentPassword = await bcrypt.hash('student123', 10);
+    const committeePassword = await bcrypt.hash('committee123', 10);
 
-    // Insert admin user
+    // ==================== USERS ====================
+    // Admin (1)
     const [adminResult] = await pool.query(
-      `INSERT INTO users (student_id, email, password, first_name, last_name, phone, role) 
-       VALUES (?, ?, ?, ?, ?, ?, 'admin')`,
-      ['SIT-ADMIN', 'admin@sit.kmutt.ac.th', adminPassword, 'ผู้ดูแลระบบ', 'SIT KMUTT', '02-470-9850']
+      `INSERT INTO users (student_id, email, password, first_name, last_name, phone, faculty, department, year_of_study, gpa, role)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'admin')`,
+      ['SIT-ADMIN', 'admin@sit.kmutt.ac.th', adminPassword, 'ผู้ดูแลระบบ', 'SIT KMUTT', '02-470-9850', 'School of Information Technology', 'IT', 4, 3.90, 'admin']
     );
     const adminId = adminResult.insertId;
-    console.log('Seeded admin account (admin@sit.kmutt.ac.th / admin123).');
+    console.log('Seeded admin: admin@sit.kmutt.ac.th / admin123');
 
-    // List of 18 scholarships
-    const scholarships = [
-      // กลุ่ม 1: ทุนคณะ SIT
-      {
-        name: 'ทุนเรียนดี SIT',
-        description: 'มอบเป็นรางวัลสำหรับนักศึกษาผลการเรียนโดดเด่น ส่งเสริมจิตอาสาแบ่งปันความรู้',
-        eligibility: 'นักศึกษา SIT ระดับ ป.ตรี, พิจารณาเรียงตาม GPAX, ประพฤติดี',
-        benefits: 'ตามงบประมาณแต่ละปี พิจารณาเรียงตามเกรด',
-        required_documents: 'ใบแสดงผลการเรียน (GPAX)\nใบสมัครทุนการศึกษา',
-        application_start: '2026-06-01',
-        application_end: '2026-07-31',
-        status: 'open',
-        max_recipients: 50,
-        scholarship_type: 'sit-merit',
-        category: 'sit'
-      },
-      {
-        name: 'ทุนกิจกรรมเด่น SIT',
-        description: 'มอบให้นักศึกษาสร้างชื่อเสียงจากการประกวด/รางวัลด้าน IT หรือคอมพิวเตอร์ ยื่นขอได้ตลอดปีการศึกษา ภายใน 6 เดือนหลังได้รับรางวัล',
-        eligibility: 'นักศึกษา SIT ที่สร้างชื่อเสียงจากการประกวดหรือรับรางวัล',
-        benefits: 'ทุนการศึกษาพิเศษพิจารณาเป็นรายกรณี',
-        required_documents: 'หลักฐานการได้รับรางวัล/ประกาศนียบัตร\nผลงานที่ส่งเข้าประกวด',
-        application_start: '2026-06-01',
-        application_end: '2026-12-31',
-        status: 'open',
-        max_recipients: 20,
-        scholarship_type: 'sit-activity',
-        category: 'sit'
-      },
-      {
-        name: 'ทุนจ้างงาน SIT',
-        description: 'ส่งเสริมใช้เวลาว่างให้เกิดประโยชน์ มีรายได้ระหว่างเรียน ค่าตอบแทน 50 บาท/ชม. (สูงสุด 300 บาท/วัน, 2,000 บาท/สัปดาห์)',
-        eligibility: 'นักศึกษา SIT ทุกชั้นปีที่สนใจเรียนรู้งานของฝ่ายต่างๆ ในคณะ',
-        benefits: 'ค่าตอบแทนชั่วโมงละ 50 บาท (วงเงินรวม: ภาคปกติ 6,000 บาท / ภาคพิเศษ 10,000 บาท)',
-        required_documents: 'ตารางเรียน\nสำเนาสมุดบัญชีธนาคาร',
-        application_start: '2026-06-01',
-        application_end: '2026-10-31',
-        status: 'open',
-        max_recipients: 100,
-        scholarship_type: 'sit-work',
-        category: 'sit'
-      },
-      // กลุ่ม 2: ทุนมหาวิทยาลัย มจธ.
-      {
-        name: 'ทุนเพชรพระจอมเกล้า',
-        description: 'ศักยภาพสูงด้านวิชาการ+ความสามารถเฉพาะด้าน ครอบคลุม: ค่าเล่าเรียน + ค่าอุปกรณ์แรกเข้า 30,000 บาท + ค่าครองชีพ 4,000 บาท/เดือน',
-        eligibility: 'นักศึกษา มจธ. ที่มีคะแนนและประวัติวิชาการดีเยี่ยมหรือโดดเด่นเป็นพิเศษ',
-        benefits: 'ค่าเล่าเรียน + ค่าอุปกรณ์แรกเข้า 30,000 บาท + ค่าครองชีพ 4,000 บาท/เดือน',
-        required_documents: 'ใบสมัครทุนเพชรพระจอมเกล้า\nแฟ้มสะสมผลงาน (Portfolio)\nใบรับรองผลการเรียน',
-        application_start: '2026-05-01',
-        application_end: '2026-06-30',
-        status: 'open',
-        max_recipients: 10,
-        scholarship_type: 'kmutt-grant',
-        category: 'kmutt'
-      },
-      {
-        name: 'ทุนธรรมรักษา',
-        description: 'ขาดแคลนทุนทรัพย์ พื้นที่ทุรกันดาร ไม่มีคนในครอบครัวจบ ป.ตรี',
-        eligibility: 'ขาดแคลนทุนทรัพย์อย่างมาก ภูมิลำเนาในเขตพื้นที่ทุรกันดาร และไม่มีสมาชิกครอบครัวจบ ป.ตรี',
-        benefits: 'ค่าเล่าเรียน + ค่าครองชีพ 4,000 บาท/เดือน + ค่าอุปกรณ์ 10,000 บาท/ปี',
-        required_documents: 'หนังสือรับรองรายได้ครอบครัว\nภาพถ่ายบ้านพักอาศัย\nใบสมัครทุนธรรมรักษา',
-        application_start: '2026-05-01',
-        application_end: '2026-06-30',
-        status: 'open',
-        max_recipients: 15,
-        scholarship_type: 'kmutt-grant',
-        category: 'kmutt'
-      },
-      {
-        name: 'ทุน กยศ. ลักษณะที่ 1',
-        description: 'กองทุนเงินให้กู้ยืมเพื่อการศึกษา สำหรับนักเรียนหรือนักศึกษาที่ขาดแคลนทุนทรัพย์',
-        eligibility: 'รายได้ครอบครัวต่อปีรวมไม่เกิน 360,000 บาท ขาดแคลนทุนทรัพย์',
-        benefits: 'กู้ค่าเล่าเรียนตามจริง + ค่าครองชีพ 3,000 บาท/เดือน',
-        required_documents: 'เอกสารประกอบการขอกู้ยืมเงิน กยศ. ทั้งหมด\nใบรับรองเงินเดือนบิดามารดา',
-        application_start: '2026-04-01',
-        application_end: '2026-08-31',
-        status: 'open',
-        max_recipients: 500,
-        scholarship_type: 'kmutt-loan',
-        category: 'kmutt'
-      },
-      {
-        name: 'ทุน กยศ. ลักษณะที่ 2',
-        description: 'กองทุนเงินให้กู้ยืมเพื่อการศึกษา สำหรับสาขาวิชาที่เป็นความต้องการหลักและมีความสำคัญต่อการพัฒนาประเทศ',
-        eligibility: 'นักศึกษาในสาขาวิชาที่ได้รับการกำหนดเป็นความต้องการหลัก',
-        benefits: 'กู้ค่าเล่าเรียนตามจริง + ค่าครองชีพ 3,000 บาท/เดือน',
-        required_documents: 'เอกสารขอกู้ยืมเงิน กยศ. ลักษณะที่ 2',
-        application_start: '2026-04-01',
-        application_end: '2026-08-31',
-        status: 'open',
-        max_recipients: 300,
-        scholarship_type: 'kmutt-loan',
-        category: 'kmutt'
-      },
-      {
-        name: 'ทุนให้เปล่า (ภายนอก)',
-        description: 'จากบริษัท หรือผู้บริจาคภายนอก มอบให้ผู้ขาดแคลนทุนทรัพย์หรือเรียนดีตามเงื่อนไขผู้ให้ทุน',
-        eligibility: 'นักศึกษาที่ขาดแคลนทุนทรัพย์ หรือเรียนดีตามเกณฑ์ที่บริษัทผู้มอบทุนระบุ',
-        benefits: 'ทุนการศึกษาให้เปล่าตามเงื่อนไขผู้มีอุปการคุณ',
-        required_documents: 'ใบรับรองเกรดเฉลี่ยสะสม\nใบรับรองรายได้ครอบครัว',
-        application_start: '2026-06-01',
-        application_end: '2026-08-31',
-        status: 'open',
-        max_recipients: 30,
-        scholarship_type: 'kmutt-grant',
-        category: 'kmutt'
-      },
-      {
-        name: 'ทุนสนับสนุนการศึกษา (ทุนกรณีฉุกเฉิน)',
-        description: 'สำหรับนักศึกษาที่เดือดร้อนทางการเงินอย่างร้ายแรง เช่น ผู้ปกครองตกงาน ประสบอุบัติภัย เป็นต้น โดยมีอาจารย์ที่ปรึกษาเป็นผู้เสนอชื่อ',
-        eligibility: 'นักศึกษาที่เผชิญวิกฤตทางการเงินกะทันหัน มีการรับรองจากอาจารย์ที่ปรึกษา',
-        benefits: 'วงเงินช่วยเหลือช่วยเหลือตามความจำเป็นแบบเร่งด่วน',
-        required_documents: 'ใบเสนอชื่อและจดหมายรับรองจากอาจารย์ที่ปรึกษา\nเอกสารแสดงหลักฐานความเดือดร้อน',
-        application_start: '2026-05-01',
-        application_end: '2027-05-01',
-        status: 'open',
-        max_recipients: 40,
-        scholarship_type: 'kmutt-special',
-        category: 'kmutt'
-      },
-      {
-        name: 'ทุน Applied Learning 1',
-        description: 'ทุนประสบการณ์วิจัยและการเรียนรู้ประยุกต์ งานทักษะพิเศษ: พัฒนา Software, Web, Data Analytic',
-        eligibility: 'นักศึกษาที่มีความสามารถในการทำโปรเจกต์งานวิจัยหรืองานระบบในมหาวิทยาลัย',
-        benefits: 'โครงการละไม่เกิน 20,000 บาท',
-        required_documents: 'ข้อเสนอโครงการ (Proposal)\nใบแสดงทักษะความรู้',
-        application_start: '2026-06-01',
-        application_end: '2026-11-30',
-        status: 'open',
-        max_recipients: 15,
-        scholarship_type: 'kmutt-special',
-        category: 'kmutt'
-      },
-      {
-        name: 'ทุน Applied Learning 2',
-        description: 'งานที่ใช้ทักษะความรู้เสร็จสิ้นในระยะสั้น ช่วยงานปฏิบัติการหรือส่วนงานทางวิชาการ',
-        eligibility: 'นักศึกษาที่พร้อมปฏิบัติงานระยะสั้นในภาควิชา',
-        benefits: 'ค่าตอบแทนตามสัดส่วนปริมาณงาน',
-        required_documents: 'ตารางเรียน\nใบประวัติผลงานย่อ',
-        application_start: '2026-06-01',
-        application_end: '2026-11-30',
-        status: 'open',
-        max_recipients: 25,
-        scholarship_type: 'kmutt-special',
-        category: 'kmutt'
-      },
-      {
-        name: 'ทุนการศึกษาสิริวิริยา',
-        description: 'ชั้นปี 2 ขึ้นไป สู้ชีวิต ขยันหมั่นเพียร ขาดทุนทรัพย์',
-        eligibility: 'ชั้นปี 2 ขึ้นไป ผลการเรียนเฉลี่ยสะสมไม่ต่ำกว่า 2.00 สู้ชีวิต ขยัน และขาดแคลนทุนทรัพย์',
-        benefits: 'ค่าเล่าเรียน + ค่าครองชีพ 6,000 บาท/เดือน + ค่าอุปกรณ์ 10,000 บาท/ปี',
-        required_documents: 'เอกสารแสดงรายได้ครอบครัว\nประวัติผลงานการช่วยเหลือกิจกรรม',
-        application_start: '2026-05-01',
-        application_end: '2026-07-31',
-        status: 'open',
-        max_recipients: 8,
-        scholarship_type: 'kmutt-grant',
-        category: 'kmutt'
-      },
-      {
-        name: 'ทุนเจียระไนเพชร',
-        description: 'ส่งเสริมการสร้างผลงาน ศักยภาพโดดเด่น/สร้างชื่อเสียงให้มหาวิทยาลัย',
-        eligibility: 'นักศึกษาที่มีความสามารถเป็นเลิศในด้านต่างๆ หรือช่วยสร้างชื่อเสียงระดับจังหวัด/ประเทศ',
-        benefits: 'ทุนการศึกษาเชิดชูเกียรติและรางวัลพิเศษ',
-        required_documents: 'พอร์ตผลงาน\nใบรับรองจากสมาคม/ผู้จัดกิจกรรม',
-        application_start: '2026-06-01',
-        application_end: '2026-09-30',
-        status: 'open',
-        max_recipients: 20,
-        scholarship_type: 'kmutt-special',
-        category: 'kmutt'
-      },
-      {
-        name: 'ทุนแสดเหลืองเรืองรุ่ง',
-        description: 'ความสามารถดีเด่นด้านวิชาการ กีฬา ศิลปวัฒนธรรม นวัตกรรม และมีทักษะความเป็นผู้นำการเปลี่ยนแปลง',
-        eligibility: 'นักศึกษาดีเด่นที่เป็นผู้นำกิจกรรม หรือนักกีฬา/นักวัฒนธรรม',
-        benefits: 'การยกเว้นค่าหน่วยกิตและค่าครองชีพสนับสนุนการทำกิจกรรม',
-        required_documents: 'พอร์ตกิจกรรม\nจดหมายแนะนำตัว',
-        application_start: '2026-06-01',
-        application_end: '2026-08-31',
-        status: 'open',
-        max_recipients: 12,
-        scholarship_type: 'kmutt-special',
-        category: 'kmutt'
-      },
-      {
-        name: 'ทุนผู้ประสบอุบัติภัย',
-        description: 'ครอบครัวประสบภัยธรรมชาติ เช่น อัคคีภัย วาตภัย อุทกภัย หรือภัยร้ายแรงอื่นๆ',
-        eligibility: 'นักศึกษาที่ครอบครัวได้รับความเดือดร้อนจากภัยพิบัติอย่างร้ายแรง',
-        benefits: 'วงเงินช่วยเหลือช่วยเหลือไม่เกิน 5,000 บาท',
-        required_documents: 'หนังสือยืนยันจากทางอำเภอ/ผู้ใหญ่บ้าน\nภาพถ่ายสภาพบ้านเรือนที่ประสบภัย',
-        application_start: '2026-05-01',
-        application_end: '2027-05-01',
-        status: 'open',
-        max_recipients: 50,
-        scholarship_type: 'kmutt-special',
-        category: 'kmutt'
-      },
-      // กลุ่ม 3: ทุนต่างชาติ
-      {
-        name: 'The Petchra Pra Jom Klao Undergraduate Scholarship',
-        description: 'สำหรับนักศึกษาต่างชาติที่มีผลการเรียนโดดเด่นและต้องการศึกษาต่อในระดับปริญญาตรี',
-        eligibility: 'International students with GPAX of 3.60 or above',
-        benefits: 'Full tuition waiver + monthly stipend',
-        required_documents: 'High school transcripts\nEnglish proficiency test scores (IELTS/TOEFL)\nCopy of passport',
-        application_start: '2026-03-01',
-        application_end: '2026-06-30',
-        status: 'open',
-        max_recipients: 5,
-        scholarship_type: 'international',
-        category: 'international'
-      },
-      {
-        name: 'Multi-intellectual Scholarship',
-        description: 'ทุนการศึกษาสำหรับนักศึกษาต่างชาติจากกลุ่มประเทศเพื่อนบ้าน CLMV (กัมพูชา ลาว พม่า เวียดนาม)',
-        eligibility: 'Applicants must be citizens of Cambodia, Laos, Myanmar, or Vietnam',
-        benefits: 'Tuition and fee waiver + health insurance support',
-        required_documents: 'Certificate of graduation\nRecommendation letters\nCLMV Citizenship ID/Passport',
-        application_start: '2026-03-01',
-        application_end: '2026-06-30',
-        status: 'open',
-        max_recipients: 10,
-        scholarship_type: 'international',
-        category: 'international'
-      },
-      {
-        name: 'KMUTT International Scholarship Program (KISP)',
-        description: 'ทุนการศึกษาสนับสนุนนักเรียนต่างชาติทั่วไปจากทุกทวีปทั่วโลก เพื่อแลกเปลี่ยนและพัฒนาการศึกษาร่วมกัน',
-        eligibility: 'Non-Thai citizens from any foreign countries',
-        benefits: 'Partial tuition fee reduction + accommodation assistance',
-        required_documents: 'Transcripts\nPersonal Statement\nFinancial Proof',
-        application_start: '2026-03-01',
-        application_end: '2026-06-30',
-        status: 'open',
-        max_recipients: 15,
-        scholarship_type: 'international',
-        category: 'international'
-      }
+    // Committee (3)
+    const committeeUsers = [
+      { student_id: 'SIT-COM001', email: 'committee1@sit.kmutt.ac.th', first_name: 'ธนพล', last_name: 'วิชัยดิลก', phone: '08-1234-5678', department: 'Computer Science', year: 3, gpa: 3.75 },
+      { student_id: 'SIT-COM002', email: 'committee2@sit.kmutt.ac.th', first_name: 'สุภาพร', last_name: 'มหาวัน', phone: '08-2345-6789', department: 'Information Technology', year: 3, gpa: 3.82 },
+      { student_id: 'SIT-COM003', email: 'committee3@sit.kmutt.ac.th', first_name: 'วิชัย', last_name: 'สุขใจ', phone: '08-3456-7890', department: 'Data Science', year: 4, gpa: 3.95 }
     ];
 
-    // Seed scholarships
-    for (const s of scholarships) {
+    for (const c of committeeUsers) {
       await pool.query(
-        `INSERT INTO scholarships 
-         (name, description, eligibility, benefits, required_documents, application_start, application_end, status, max_recipients, scholarship_type, category, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          s.name,
-          s.description,
-          s.eligibility,
-          s.benefits,
-          s.required_documents,
-          s.application_start,
-          s.application_end,
-          s.status,
-          s.max_recipients,
-          s.scholarship_type,
-          s.category,
-          adminId
-        ]
+        `INSERT INTO users (student_id, email, password, first_name, last_name, phone, faculty, department, year_of_study, gpa, role)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'committee')`,
+        [c.student_id, c.email, committeePassword, c.first_name, c.last_name, c.phone, 'School of Information Technology', c.department, c.year, c.gpa]
       );
     }
+    console.log('Seeded 3 committee accounts: committee1/2/3@sit.kmutt.ac.th / committee123');
 
-    console.log(`Seeded ${scholarships.length} scholarships successfully.`);
-    console.log('Database seeding completed.');
+    // Students (5)
+    const students = [
+      { student_id: '6501', email: 'student1@sit.kmutt.ac.th', first_name: 'นภา', last_name: 'ใจเย็น', phone: '08-1111-1111', department: 'Computer Science', year: 1, gpa: 3.20 },
+      { student_id: '6502', email: 'student2@sit.kmutt.ac.th', first_name: 'ธัญญา', last_name: 'รักดี', phone: '08-2222-2222', department: 'Information Technology', year: 2, gpa: 3.45 },
+      { student_id: '6503', email: 'student3@sit.kmutt.ac.th', first_name: 'มาริษา', last_name: 'สุขสบาย', phone: '08-3333-3333', department: 'Data Science', year: 3, gpa: 3.78 },
+      { student_id: '6504', email: 'student4@sit.kmutt.ac.th', first_name: 'ปิยะ', last_name: 'วงศ์อนุกูล', phone: '08-4444-4444', department: 'Computer Science', year: 4, gpa: 2.85 },
+      { student_id: '6505', email: 'student5@sit.kmutt.ac.th', first_name: 'สุรศักดิ์', last_name: 'ใจกว้าง', phone: '08-5555-5555', department: 'Information Technology', year: 1, gpa: 2.60 }
+    ];
+
+    const studentIds = [];
+    for (const s of students) {
+      const [result] = await pool.query(
+        `INSERT INTO users (student_id, email, password, first_name, last_name, phone, faculty, department, year_of_study, gpa, role)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'student')`,
+        [s.student_id, s.email, studentPassword, s.first_name, s.last_name, s.phone, 'School of Information Technology', s.department, s.year, s.gpa]
+      );
+      studentIds.push(result.insertId);
+    }
+    console.log('Seeded 5 student accounts: student1-5@sit.kmutt.ac.th / student123');
+
+    // ==================== SIT SCHOLARSHIPS (3 detailed) ====================
+
+    // 1. ทุนเรียนดี - Good Academic Performance Scholarship
+    const [sit1] = await pool.query(
+      `INSERT INTO scholarships (name, description, eligibility, benefits, required_documents, application_start, application_end, status, max_recipients, scholarship_type, category, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        'ทุนเรียนดี',
+        'มอบเป็นรางวัลสำหรับนักศึกษาผลการเรียนโดดเด่นเพื่อเป็นแรงจูงใจและสนับสนุนการศึกษาของนักศึกษา ผู้ได้รับทุนจะต้องมีส่วนร่วมในกิจกรรมอาสาสมัครหรือกิจกรรมทางวิชาการ',
+        '• ต้องเป็นนักศึกษาระดับปริญญาตรีของคณะเทคโนโลยีสารสนเทศ (SIT)\n• มีคะแนนเฉลี่ยสะสม (GPAX) ไม่ต่ำกว่า 3.60\n• มีความประพฤติดี ไม่มีโทษทางวินัย\n• สามารถเข้าร่วมกิจกรรมอาสาสมัครหรือกิจกรรมอาสาสมัครทางวิชาการได้',
+        '• วงเงินทุนตามงบประมาณประจำปีของคณะ\n• พิจารณาจากลำดับคะแนน GPAX และเอกสารประกอบ\n• การจัดสรรขึ้นอยู่กับงบประมาณที่คณะกำหนดในแต่ละปีการศึกษา',
+        '• ใบสมัครทุนการศึกษา\n• ระเบียนแสดงผลการเรียนอย่างเป็นทางการ (Transcript) แสดงคะแนนเฉลี่ยสะสม GPAX\n• หลักฐานการเข้าร่วมกิจกรรม (ถ้ามี)\n• หนังสือรับรองความประพฤติจากอาจารย์ที่ปรึกษา',
+        '2026-06-01',
+        '2026-07-31',
+        'open',
+        50,
+        'sit-merit',
+        'sit',
+        adminId
+      ]
+    );
+    console.log('Seeded scholarship: ทุนเรียนดี');
+
+    // 2. ทุนกิจกรรมดีเด่น - Outstanding Activity Scholarship
+    const [sit2] = await pool.query(
+      `INSERT INTO scholarships (name, description, eligibility, benefits, required_documents, application_start, application_end, status, max_recipients, scholarship_type, category, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        'ทุนกิจกรรมดีเด่น',
+        'สนับสนุนนักศึกษาที่สร้างชื่อเสียงให้คณะและมหาวิทยาลัยจากการได้รับรางวัลในการแข่งขันด้าน IT หรือเทคโนโลยีคอมพิวเตอร์ สามารถยื่นขอได้ตลอดปีการศึกษา โดยเอกสารต้องยื่นภายใน 6 เดือนหลังได้รับรางวัล',
+        '• ต้องเป็นนักศึกษาระดับปริญญาตรีของคณะ SIT\n• ต้องผ่านการศึกษามาแล้วอย่างน้อย 1 ภาคการศึกษา\n• ต้องเข้าร่วมและได้รับรางวัลในการแข่งขันด้าน IT, คอมพิวเตอร์ หรือสาขาที่เกี่ยวข้อง จากหน่วยงานภายในหรือภายนอก\n• รางวัลที่ได้รับต้องยื่นเอกสารภายใน 6 เดือนหลังจากได้รับรางวัล',
+        '• วงเงินทุนตามดุลยพินิจของคณะกรรมการทุน\n• พิจารณาตามเกณฑ์ "ทุนเพชรพระจอมเกล้า" ของมหาวิทยาลัย\n• หากได้รับทุนเพชรพระจอมเกล้าแล้วจะไม่รับพิจารณาซ้ำ',
+        '• ใบสมัครทุนการศึกษา\n• เอกสาร/หลักฐานการได้รับรางวัล (ต้องยื่นภายใน 6 เดือนหลังได้รับรางวัล)\n• ผลงานที่ส่งเข้าประกวด\n• สำเนาประกาศนียบัตรรางวัล',
+        '2026-06-01',
+        '2026-12-31',
+        'open',
+        20,
+        'sit-activity',
+        'sit',
+        adminId
+      ]
+    );
+    console.log('Seeded scholarship: ทุนกิจกรรมดีเด่น');
+
+    // 3. ทุนจ้างงาน - Work-Study Scholarship
+    const [sit3] = await pool.query(
+      `INSERT INTO scholarships (name, description, eligibility, benefits, required_documents, application_start, application_end, status, max_recipients, scholarship_type, category, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        'ทุนจ้างงาน',
+        'สร้างโอกาสให้นักศึกษาได้รับประสบการณ์การทำงานที่เป็นประโยชน์ในเวลาว่าง พร้อมทั้งสร้างรายได้ระหว่างเรียนเพื่อช่วยค่าใช้จ่าย',
+        '• ต้องเป็นนักศึกษาระดับปริญญาตรีของคณะ SIT\n• ต้องผ่านการศึกษามาแล้วอย่างน้อย 1 ภาคการศึกษา\n• มีคะแนนเฉลี่ยสะสม (GPAX) ไม่ต่ำกว่า 2.50\n• มีความประพฤติดีและสามารถปฏิบัติงานที่ได้รับมอบหมายได้',
+        '• เงินเดือนฐาน: 6,000 บาท สำหรับภาคปกติ (1 และ 2), 10,000 บาท สำหรับภาคพิเศษ\n• ค่าตอบแทนการทำงาน: 50 บาท/ชั่วโมง\n• สูงสุด 300 บาท/วัน, ไม่เกิน 2,000 บาท/สัปดาห์\n• จ่ายรายเดือนตามชั่วโมงที่ทำงานจริง',
+        '• ตารางเรียน\n• สำเนาสมุดบัญชีธนาคาร\n• หนังสือรับรองจากอาจารย์ที่ปรึกษา (ถ้ามี)\n• เอกสารยินยอมจากผู้ปกครอง (สำหรับนักศึกษาต่ำกว่า 20 ปี)',
+        '2026-06-01',
+        '2026-10-31',
+        'open',
+        100,
+        'sit-work',
+        'sit',
+        adminId
+      ]
+    );
+    console.log('Seeded scholarship: ทุนจ้างงาน');
+
+    console.log('\n=== Database seeding completed ===');
+    console.log('Users: 1 admin + 3 committee + 5 students');
+    console.log('Scholarships: 3 SIT scholarships only');
+    console.log('\n--- Login credentials ---');
+    console.log('Admin: admin@sit.kmutt.ac.th / admin123');
+    console.log('Committee: committee1@sit.kmutt.ac.th / committee123');
+    console.log('Students: student1@sit.kmutt.ac.th / student123');
+    console.log('---');
+
     process.exit(0);
   } catch (error) {
     console.error('Error during database seeding:', error);

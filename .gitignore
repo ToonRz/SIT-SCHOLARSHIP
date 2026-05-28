@@ -18,7 +18,10 @@ out/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*
 *.env
+!.env.example
+!*.env.example
 
 # Logs
 logs
@@ -43,6 +46,9 @@ lerna-debug.log*
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Uploaded files
+backend/uploads/
 
 # Testing
 /coverage
