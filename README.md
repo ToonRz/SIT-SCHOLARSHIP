@@ -1,89 +1,95 @@
-# SIT-SCHOLARSHIP
+# SIT Scholarship Management System
 
 ระบบจัดการและสมัครทุนการศึกษา คณะเทคโนโลยีสารสนเทศ (SIT) มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าธนบุรี (KMUTT)
+
+| ส่วน | URL (พัฒนา) |
+|------|-------------|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:3001 |
+| Health check | http://localhost:3001/api/health |
+
+---
+
+## ความต้องการของระบบ
+
+- **Node.js** 18+
+- **MySQL** 8+
+- **Google Gemini API key** (ถ้าต้องการใช้ฟีเจอร์แนะนำทุนด้วย AI)
 
 ---
 
 ## ฟีเจอร์หลัก
 
-### สำหรับนักศึกษา
-- **ดูทุนการศึกษา** — แยกตามประเภท: ทุนเรียนดี (SIT Merit), ทุนกิจกรรม (SIT Activity), ทุนจ้างงาน (SIT Work), ทุนให้เปล่า (KMUTT Grant), ทุนกู้ยืม (กยศ.), ทุนต่างชาติ (International)
-- **วิเคราะห์ด้วย AI (Gemini)** — แนะนำทุนที่เหมาะสมที่สุด 3 อันดับแรก จากโปรไฟล์ GPA ชั้นปี และสาขา (PDPA-compliant — ไม่ส่งข้อมูลส่วนตัวให้ AI)
-- **สมัครทุนออนไลน์** — กรอกเหตุผลความจำนง แนบเอกสาร PDF และข้อมูลรายได้ครอบครัว
-- **ติดตามสถานะใบสมัคร** — ดูผลการพิจารณา (รอพิจารณา, อนุมัติ, ไม่อนุมัติ)
-- **จัดการโปรไฟล์** — ข้อมูลส่วนตัวแก้ไขได้ (แก้ไขได้: เบอร์, Gmail ที่ยืนยันแล้ว, รายได้ครอบครัว, ผู้ปกครอง — ข้อมูลทะเบียนอ่านอย่างเดียว)
+### สำหรับนักศึกษา (`student`)
+- ดูรายการทุนและรายละเอียดแต่ละทุน
+- หน้า **คุณสมบัติทุน SIT** (`/qualifications`) — สรุปคุณสมบัติจากข้อมูลทุนในระบบ
+- **แนะนำทุนด้วย AI (Gemini)** — อันดับ 3 ทุนที่เหมาะจาก GPA ชั้นปี และสาขา (ส่งเฉพาะข้อมูลที่จำเป็น ไม่ส่งข้อมูลระบุตัวตน)
+- สมัครทุนออนไลน์ — จดหมายจุดมุ่งหมาย แนบ PDF รายได้ครอบครัว
+- ติดตามใบสมัคร (`/my-applications`) — สถานะ `pending` · `reviewing` · `approved` · `rejected`
+- จัดการโปรไฟล์ — แก้ไขเบอร์ อีเมลส่วนตัว (ยืนยันแล้ว) รายได้/ผู้ปกครอง; ข้อมูลทะเบียนอ่านอย่างเดียว
 
-### สำหรับผู้ดูแลระบบ
-- **แดชบอร์ดสรุปผล** — สถิติจำนวนผู้ใช้งาน ทุนทั้งหมด และใบสมัครแยกตามสถานะ
-- **จัดการทุน** — สร้าง แก้ไข ปิด/เปิดรับสมัคร หรือลบทุน
-- **ตรวจสอบใบสมัคร** — ดูรายละเอียด ดาวน์โหลดเอกสาร PDF อนุมัติ/ปฏิเสธ
-- **จัดการผู้ใช้** — ค้นหานักศึกษา ดูประวัติการสมัคร เปลี่ยนบทบาท
+### สำหรับคณะกรรมการ (`committee`)
+- ตรวจสอบและพิจารณาใบสมัคร (`/admin/applications`)
+- ดูสถิติแดชบอร์ด (ร่วมกับ admin)
 
----
-
-## สถาปัตยกรรม
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  Frontend (React/Vite, port 5173)                      │
-│  ├── api/axios.js       — Axios + JWT interceptors     │
-│  ├── context/AuthContext — Auth state                 │
-│  ├── components/       — Navbar, Footer, ScholarshipCard│
-│  └── pages/            — Home, Login, Register,        │
-│                         Scholarships, Apply, Profile,   │
-│                         AdminDashboard, AdminScholarships│
-│                         AdminApplications, AdminUsers   │
-└───────────────────┬─────────────────────────────────────┘
-                    │ HTTP + JWT
-┌───────────────────▼─────────────────────────────────────┐
-│  Backend (Express, port 3001)                          │
-│  ├── routes/auth.js       — Login, Register, Email verify│
-│  ├── routes/users.js      — User CRUD, Dashboard stats │
-│  ├── routes/scholarships.js — Scholarship CRUD, Stats  │
-│  ├── routes/applications.js — Apply, Review, History  │
-│  ├── routes/recommendations.js — AI (Gemini) recommend│
-│  ├── middleware/auth.js   — JWT + authorizeRoles()    │
-│  ├── middleware/validate.js — express-validator       │
-│  └── middleware/upload.js — multer PDF upload          │
-└───────────────────┬─────────────────────────────────────┘
-                    │ mysql2
-              ┌─────▼─────┐
-              │   MySQL   │
-              └───────────┘
-```
+### สำหรับผู้ดูแลระบบ (`admin`)
+- แดชบอร์ดสรุปผล (`/admin`)
+- จัดการทุน — สร้าง แก้ไข เปิด/ปิดรับสมัคร ลบ (`/admin/scholarships`)
+- จัดกลุ่มทุนตามประเภท (`/admin/grouping`)
+- ประวัติการอนุมัติ/ปฏิเสธ (`/admin/approval-history`)
+- จัดการผู้ใช้ — ค้นหา เปลี่ยนบทบาท (`/admin/users`)
 
 ---
 
-## ประเภททุน (scholarship_type)
-`sit-merit` · `sit-activity` · `sit-work` · `kmutt-grant` · `kmutt-loan` · `kmutt-special` · `international`
+## โครงสร้างโปรเจกต์
 
-## หมวดทุน (category)
-`sit` · `kmutt` · `international`
-
-## บทบาทผู้ใช้ (role)
-`student` · `admin` · `committee`
+```
+SIT-SCHOLARSHIP/
+├── frontend/          # React + Vite + Tailwind
+│   └── src/
+│       ├── api/       # Axios + JWT interceptors
+│       ├── components/
+│       ├── context/   # AuthContext
+│       └── pages/
+├── backend/           # Express API
+│   ├── routes/        # auth, users, scholarships, applications, recommendations
+│   ├── middleware/    # auth, validate, upload
+│   ├── config/db.js
+│   ├── migrate.js     # อัปเดตคอลัมน์ (รันอัตโนมัติตอน start server)
+│   └── seed.js        # ข้อมูลทดสอบ
+└── database/
+    └── schema.sql     # สร้างตารางครั้งแรก
+```
 
 ---
 
 ## วิธีติดตั้ง
 
-### 1. Database
+### 1. สร้างฐานข้อมูล
+
 ```sql
 CREATE DATABASE sit_scholarship CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
-จากนั้นรัน migration เพื่อสร้างตาราง:
+
+นำเข้า schema (สร้างตาราง):
+
 ```bash
-cd backend && node migrate.js && node seed.js
+mysql -u root -p sit_scholarship < database/schema.sql
 ```
 
 ### 2. Backend
+
 ```bash
-cd backend && npm install
+cd backend
+npm install
+cp .env.example .env   # แก้ค่า DB และ JWT ให้ตรงเครื่อง
 ```
 
-สร้างไฟล์ `.env`:
+ตัวอย่าง `backend/.env`:
+
 ```env
 PORT=3001
+# CORS_ORIGIN=http://localhost:5173   # ใช้ใน production (คั่นหลาย origin ด้วย comma)
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=your_password
@@ -95,33 +101,98 @@ GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-flash-latest
 ```
 
-รัน server:
+ใส่ข้อมูลทดสอบ (admin + committee + นักศึกษา 5 คน + ทุน SIT 3 รายการ):
+
 ```bash
-npm run dev
+npm run seed
+```
+
+รัน API (รัน migration เพิ่มคอลัมน์ให้อัตโนมัติก่อน listen):
+
+```bash
+npm run dev    # nodemon — พัฒนา
+npm start      # production
 ```
 
 ### 3. Frontend
+
 ```bash
-cd frontend && npm install
-npm run dev
+cd frontend
+npm install
+npm run dev      # http://localhost:5173
+npm run build    # build สำหรับ deploy
+npm run lint
 ```
+
+> **หมายเหตุ:** ในโหมดพัฒนา CORS อนุญาต `localhost` ทุกพอร์ต (กรณี Vite ใช้พอร์ตอื่นเมื่อ 5173 ถูกใช้งานแล้ว)
 
 ---
 
-## บัญชีทดสอบ
+## บัญชีทดสอบ (หลัง `npm run seed`)
 
-| บทบาท | อีเมล | รหัสผ่าน |
-|---|---|---|
-| Admin | admin@sit.kmutt.ac.th | admin123 |
-| Committee | committee1@sit.kmutt.ac.th | committee123 |
-| Student | student1@sit.kmutt.ac.th | student123 |
+| บทบาท | อีเมล | รหัสผ่าน | หน้าแรกหลัง login |
+|--------|--------|----------|-------------------|
+| Admin | admin@sit.kmutt.ac.th | admin123 | `/admin` |
+| Committee | committee1@sit.kmutt.ac.th | committee123 | `/admin/applications` |
+| Student | student1@sit.kmutt.ac.th | student123 | `/scholarships` |
+
+บัญชีเพิ่มเติม: `committee2/3@sit.kmutt.ac.th`, `student2–5@sit.kmutt.ac.th` (รหัสผ่านเดียวกับด้านบน)
+
+---
+
+## ประเภททุน · หมวด · บทบาท
+
+**scholarship_type:** `sit-merit` · `sit-activity` · `sit-work` · `kmutt-grant` · `kmutt-loan` · `kmutt-special` · `international`
+
+**category:** `sit` · `kmutt` · `international`
+
+**role:** `student` · `admin` · `committee`
+
+---
+
+## API หลัก
+
+| Prefix | ใช้สำหรับ |
+|--------|-----------|
+| `GET /api/health` | ตรวจสอบสถานะ server |
+| `/api/auth` | login, register, profile, ยืนยันอีเมล |
+| `/api/users` | ผู้ใช้, สถิติแดชบอร์ด, เปลี่ยน role |
+| `/api/scholarships` | CRUD ทุน, สถิติ, รายชื่อผู้สมัคร |
+| `/api/applications` | สมัคร, ติดตาม, ตรวจสอบ, ประวัติอนุมัติ |
+| `/api/recommendations` | แนะนำทุนด้วย Gemini (ต้อง login) |
+
+ไฟล์ PDF ที่อัปโหลด: `GET /api/uploads/applications/...`
+
+---
+
+## สถาปัตยกรรม
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Frontend (React/Vite :5173)                                 │
+│  Pages: Home, Login, Qualifications, Scholarships, Detail,   │
+│         Apply, MyApplications, Profile, Admin*               │
+└────────────────────────────┬─────────────────────────────────┘
+                             │ HTTP + JWT Bearer
+┌────────────────────────────▼─────────────────────────────────┐
+│  Backend (Express :3001)                                       │
+│  auth · users · scholarships · applications · recommendations │
+│  middleware: JWT, roles, validation, multer (PDF)             │
+└────────────────────────────┬─────────────────────────────────┘
+                             │ mysql2
+                      ┌──────▼──────┐
+                      │   MySQL     │
+                      └─────────────┘
+```
+
+**การยืนยันตัวตน:** login → JWT ใน `AuthContext` → Axios แนบ `Authorization: Bearer` → `authorizeRoles()` บน route ที่ต้องจำกัดสิทธิ์
 
 ---
 
 ## Tech Stack
 
-**Frontend:** React (Vite) · Tailwind CSS · React Router DOM · Axios · React Icons · react-hot-toast
+**Frontend:** React 18 · Vite · Tailwind CSS · React Router · Axios · React Icons · react-hot-toast
 
-**Backend:** Node.js (Express) · MySQL (mysql2) · JWT · bcryptjs · express-validator · multer
+**Backend:** Node.js · Express · MySQL (mysql2) · JWT · bcryptjs · express-validator · multer
 
-**AI:** Google Gemini API (สำหรับแนะนำทุน)
+**AI:** Google Gemini API (แนะนำทุน)
