@@ -7,7 +7,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Pages
 import Home from './pages/Home';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import Scholarships from './pages/Scholarships';
 import ScholarshipDetail from './pages/ScholarshipDetail';
 import Apply from './pages/Apply';
@@ -19,6 +18,7 @@ import AdminApplications from './pages/AdminApplications';
 import AdminUsers from './pages/AdminUsers';
 import Qualifications from './pages/Qualifications';
 import AdminGrouping from './pages/AdminGrouping';
+import AdminApprovalHistory from './pages/AdminApprovalHistory';
 
 export default function App() {
   return (
@@ -30,8 +30,7 @@ export default function App() {
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/qualifications" element={<Qualifications />} />
+                        <Route path="/qualifications" element={<Qualifications />} />
             <Route path="/scholarships" element={<Scholarships />} />
             <Route path="/scholarships/:id" element={<ScholarshipDetail />} />
 
@@ -57,6 +56,7 @@ export default function App() {
               <Route path="/admin/scholarships" element={<AdminScholarships />} />
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/grouping" element={<AdminGrouping />} />
+              <Route path="/admin/approval-history" element={<AdminApprovalHistory />} />
             </Route>
           </Routes>
         </main>

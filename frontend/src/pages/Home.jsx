@@ -1,13 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axiosInstance from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import ScholarshipCard from '../components/ScholarshipCard';
-import { HiArrowRight, HiUserAdd, HiSearch } from 'react-icons/hi';
+import AIRecommendationsModal from '../components/AIRecommendationsModal';
+import { HiArrowRight, HiUserAdd, HiSearch, HiSparkles } from 'react-icons/hi';
 
 export default function Home() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [featuredScholarships, setFeaturedScholarships] = useState([]);
+
+  // AI Modal State
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [recommendations, setRecommendations] = useState([]);
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     const fetchScholarships = async () => {
@@ -20,6 +27,27 @@ export default function Home() {
     };
     fetchScholarships();
   }, []);
+
+  const handleAIAnalyze = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setAiLoading(true);
+    setRecommendations([]);
+    try {
+      const res = await axiosInstance.get('/recommendations');
+      setRecommendations(res.data);
+      setShowAIModal(true);
+    } catch (error) {
+      console.error('AI analysis failed', error);
+      if (error.response?.data?.requiresProfile) {
+        navigate('/profile');
+      }
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -44,11 +72,23 @@ export default function Home() {
             <Link to="/scholarships" className="btn-secondary !px-8 !py-3.5 text-base flex items-center gap-2">
               ดูทุนการศึกษา <HiArrowRight className="w-5 h-5" />
             </Link>
-            {!user && (
-              <Link to="/register" className="btn-outline !text-white !border-white/40 hover:!bg-white/10 !px-8 !py-3.5 text-base flex items-center gap-2">
-                สมัครสมาชิกใหม่ <HiUserAdd className="w-5 h-5" />
-              </Link>
-            )}
+            <button
+              onClick={handleAIAnalyze}
+              disabled={aiLoading}
+              className="btn-secondary !px-8 !py-3.5 text-base flex items-center gap-2"
+            >
+              {aiLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                  กำลังวิเคราะห์...
+                </>
+              ) : (
+                <>
+                  <HiSparkles className="w-5 h-5" />
+                  วิเคราะห์ด้วย AI
+                </>
+              )}
+            </button>
           </div>
         </div>
       </section>
@@ -124,6 +164,14 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* AI Recommendations Modal */}
+      <AIRecommendationsModal
+        show={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        recommendations={recommendations}
+        loading={aiLoading}
+      />
     </div>
   );
 }

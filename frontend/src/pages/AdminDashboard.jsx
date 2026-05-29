@@ -4,7 +4,7 @@ import axiosInstance from '../api/axios';
 import { toast } from 'react-hot-toast';
 import {
   HiUsers, HiAcademicCap, HiDocumentText, HiClock, HiCheckCircle, HiXCircle,
-  HiOutlineShieldCheck, HiOutlineCog, HiOutlineClipboardList
+  HiOutlineShieldCheck, HiOutlineCog, HiOutlineClipboardList, HiOutlineClock
 } from 'react-icons/hi';
 
 export default function AdminDashboard() {
@@ -165,6 +165,19 @@ export default function AdminDashboard() {
                 <div>
                   <h3 className="font-bold text-slate-800 group-hover:text-navy transition duration-150">จัดการบัญชีผู้ใช้งาน</h3>
                   <p className="text-xs text-gray-400 mt-0.5">ดูรายชื่อสมาชิก เปลี่ยนบทบาท (Role) ลบข้อมูลผู้ใช้</p>
+                </div>
+              </div>
+            </Link>
+
+            {/* Approval History */}
+            <Link to="/admin/approval-history" className="card p-6 bg-white border border-gray-100 hover:shadow-md hover:border-navy/30 group">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center shrink-0">
+                  <HiOutlineClock className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 group-hover:text-navy transition duration-150">ประวัติการอนุมัติทุน</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">ดูประวัติการอนุมัติ/ไม่อนุมัติใบสมัครทุนทั้งหมด</p>
                 </div>
               </div>
             </Link>

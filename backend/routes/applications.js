@@ -144,6 +144,28 @@ router.get('/', authenticateToken, authorizeRoles('admin', 'committee'), async (
   }
 });
 
+// GET approval history (Admin only)
+router.get('/approval-history', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT a.id, a.status, a.admin_comment, a.reviewed_at,
+              s.name as scholarship_name, s.scholarship_type,
+              u.student_id, u.first_name, u.last_name, u.email, u.department,
+              reviewer.first_name as reviewer_first_name, reviewer.last_name as reviewer_last_name
+       FROM applications a
+       JOIN scholarships s ON a.scholarship_id = s.id
+       JOIN users u ON a.user_id = u.id
+       LEFT JOIN users reviewer ON a.reviewed_by = reviewer.id
+       WHERE a.status IN ('approved', 'rejected')
+       ORDER BY a.reviewed_at DESC`
+    );
+    return res.json(rows);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการดึงประวัติการอนุมัติ' });
+  }
+});
+
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -245,6 +267,28 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการยกเลิกใบสมัคร' });
+  }
+});
+
+// GET approval history (Admin only)
+router.get('/approval-history', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT a.id, a.status, a.admin_comment, a.reviewed_at,
+              s.name as scholarship_name, s.scholarship_type,
+              u.student_id, u.first_name, u.last_name, u.email, u.department,
+              reviewer.first_name as reviewer_first_name, reviewer.last_name as reviewer_last_name
+       FROM applications a
+       JOIN scholarships s ON a.scholarship_id = s.id
+       JOIN users u ON a.user_id = u.id
+       LEFT JOIN users reviewer ON a.reviewed_by = reviewer.id
+       WHERE a.status IN ('approved', 'rejected')
+       ORDER BY a.reviewed_at DESC`
+    );
+    return res.json(rows);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการดึงประวัติการอนุมัติ' });
   }
 });
 

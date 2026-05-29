@@ -24,6 +24,8 @@ export default function Navbar() {
       ? location.pathname === '/'
       : location.pathname === path || location.pathname.startsWith(path + '/');
 
+  const isLoginPage = location.pathname === '/login';
+
   const getRoleName = (role) => {
     if (role === 'admin') return 'ผู้ดูแลระบบ';
     if (role === 'committee') return 'กรรมการ';
@@ -39,11 +41,10 @@ export default function Navbar() {
   const navLink = (to, label) => (
     <Link
       to={to}
-      className={`px-3 py-2 rounded-xl text-sm font-semibold transition duration-200 ${
-        isActive(to)
-          ? 'text-white bg-navy shadow-sm'
-          : 'text-slate-700 hover:text-navy hover:bg-slate-100'
-      }`}
+      className={`px-3 py-2 rounded-xl text-sm font-semibold transition duration-200 ${isActive(to)
+        ? 'text-white bg-navy shadow-sm'
+        : 'text-slate-700 hover:text-navy hover:bg-slate-100'
+        }`}
     >
       {label}
     </Link>
@@ -104,10 +105,12 @@ export default function Navbar() {
                     </div>
 
                     {/* Common links */}
-                    <Link to="/profile" onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                      <HiUser className="w-4 h-4" /> ข้อมูลส่วนตัว
-                    </Link>
+                    {user.role !== 'admin' && (
+                      <Link to="/profile" onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        <HiUser className="w-4 h-4" /> ข้อมูลส่วนตัว
+                      </Link>
+                    )}
 
                     {/* Student links */}
                     {user.role === 'student' && (
@@ -160,14 +163,9 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <Link to="/login" className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-navy transition">
-                  เข้าสู่ระบบ
-                </Link>
-                <Link to="/register" className="btn-primary !py-2">
-                  สมัครสมาชิก
-                </Link>
-              </div>
+              <Link to="/login" className="btn-primary !py-2">
+                เข้าสู่ระบบ
+              </Link>
             )}
           </div>
 
@@ -188,7 +186,7 @@ export default function Navbar() {
         <div className="md:hidden bg-white border-b border-gray-100 py-2 px-4 space-y-1">
           <Link to="/" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-navy">หน้าแรก</Link>
           <Link to="/qualifications" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-navy">คุณสมบัติ</Link>
-          <Link to="/scholarships" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-navy flex items-center gap-1"><HiSearch className="w-4 h-4"/> มองหาทุน</Link>
+          <Link to="/scholarships" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-navy flex items-center gap-1"><HiSearch className="w-4 h-4" /> มองหาทุน</Link>
           {user?.role === 'student' && (
             <Link to="/my-applications" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-navy">ใบสมัครของฉัน</Link>
           )}
@@ -210,7 +208,9 @@ export default function Navbar() {
                 <div className="text-xs text-gray-500">{user.email}</div>
                 <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${getRoleBadgeColor(user.role)}`}>{getRoleName(user.role)}</span>
               </div>
-              <Link to="/profile" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50">ข้อมูลส่วนตัว</Link>
+              {user?.role !== 'admin' && (
+                <Link to="/profile" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50">ข้อมูลส่วนตัว</Link>
+              )}
               <button
                 onClick={() => { setIsOpen(false); handleLogout(); }}
                 className="w-full text-left block px-3 py-2 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50"
@@ -220,8 +220,11 @@ export default function Navbar() {
             </div>
           ) : (
             <div className="space-y-2 pt-1">
-              <Link to="/login" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50">เข้าสู่ระบบ</Link>
-              <Link to="/register" onClick={() => setIsOpen(false)} className="btn-primary w-full text-center block">สมัครสมาชิก</Link>
+              {!isLoginPage && (
+                <Link to="/login" onClick={() => setIsOpen(false)} className="btn-primary w-full !py-2 text-center">
+                  เข้าสู่ระบบ
+                </Link>
+              )}
             </div>
           )}
         </div>

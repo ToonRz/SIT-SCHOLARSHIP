@@ -98,8 +98,7 @@ export default function Profile() {
     <div className="min-h-screen bg-gray-50 pb-12">
       <div className="bg-gradient-to-r from-navy via-navy-light to-blue py-10 text-white shadow-sm">
         <div className="max-w-4xl mx-auto px-4 flex flex-col md:flex-row items-center gap-6">
-          <SitLogo className="h-14 w-auto bg-white rounded-lg p-1" />
-          <div className="text-center md:text-left">
+                    <div className="text-center md:text-left">
             <h1 className="text-2xl font-extrabold">{user.first_name} {user.last_name}</h1>
             <p className="text-sm text-white/80">{user.email}</p>
           </div>
@@ -267,7 +266,7 @@ export default function Profile() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-600">ที่อยู่ผู้ปกครอง</label>
+              <label className="text-xs font-semibold text-gray-600">ที่อยู่</label>
               <textarea
                 className="input-field"
                 rows={2}

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../api/axios';
 import ScholarshipCard from '../components/ScholarshipCard';
-import { HiSearch, HiExclamation, HiSparkles, HiX, HiExternalLink } from 'react-icons/hi';
+import AIRecommendationsModal from '../components/AIRecommendationsModal';
+import { HiSearch, HiExclamation, HiSparkles } from 'react-icons/hi';
 import { useAuth } from '../context/AuthContext';
 
 export default function Scholarships() {
@@ -108,7 +109,7 @@ export default function Scholarships() {
             >
               {aiLoading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-sit-orange border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
                   <span className="hidden sm:inline">กำลังวิเคราะห์...</span>
                 </>
               ) : (
@@ -195,97 +196,12 @@ export default function Scholarships() {
       </div>
 
       {/* AI Recommendations Modal */}
-      {showAIModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
-            {/* Modal Header */}
-            <div className="bg-gradient-to-r from-sit-orange to-kmutt-gold p-6 text-white">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <HiSparkles className="w-6 h-6" />
-                  <h2 className="text-xl font-bold">ทุนที่เหมาะกับคุณ</h2>
-                </div>
-                <button
-                  onClick={() => setShowAIModal(false)}
-                  className="p-2 hover:bg-white/20 rounded-full transition"
-                >
-                  <HiX className="w-5 h-5" />
-                </button>
-              </div>
-              <p className="text-sm text-white/80 mt-1">AI วิเคราะห์จากข้อมูลโปรไฟล์ของคุณ</p>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto flex-1">
-              {recommendations.length > 0 ? (
-                <div className="space-y-4">
-                  {recommendations.map((rec, index) => (
-                    <div
-                      key={rec.id}
-                      className="border border-gray-100 rounded-xl p-4 hover:shadow-md transition"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3 flex-1">
-                          {/* Rank Badge */}
-                          <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                            index === 0 ? 'bg-kmutt-gold' : index === 1 ? 'bg-gray-400' : 'bg-orange-400'
-                          }`}>
-                            {index + 1}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-slate-800 leading-tight">{rec.name}</h3>
-                            {/* Match Score */}
-                            <div className="mt-1 text-xs text-gray-500">
-                              คะแนนความเหมาะสม: <span className="font-semibold text-sit-orange">{rec.matchScore}%</span>
-                            </div>
-                            {/* Reasons */}
-                            <div className="mt-2 space-y-1">
-                              <p className="text-xs text-gray-500 font-semibold mb-1">เหตุผลที่แนะนำ:</p>
-                              {rec.reasons.map((reason, i) => (
-                                <div key={i} className="flex items-start gap-2">
-                                  <span className="text-sit-orange mt-0.5">•</span>
-                                  <span className="text-sm text-gray-600">{reason}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      {/* View Detail Button */}
-                      <div className="mt-4 flex justify-end">
-                        <button
-                          onClick={() => {
-                            setShowAIModal(false);
-                            navigate(`/scholarships/${rec.id}`);
-                          }}
-                          className="btn-primary !px-4 !py-2 text-sm flex items-center gap-2"
-                        >
-                          <span>ดูรายละเอียด</span>
-                          <HiExternalLink className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">ไม่พบทุนที่เหมาะกับคุณในขณะนี้</p>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="border-t border-gray-100 p-4 flex justify-end">
-              <button
-                onClick={() => setShowAIModal(false)}
-                className="btn-outline !px-6"
-              >
-                ปิด
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AIRecommendationsModal
+        show={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        recommendations={recommendations}
+        loading={aiLoading}
+      />
     </div>
   );
 }

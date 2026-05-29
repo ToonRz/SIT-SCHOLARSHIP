@@ -129,7 +129,8 @@ Return ONLY valid JSON array (no markdown):
 
     return res.json(results);
   } catch (error) {
-    console.error('Recommendations error:', error);
+    console.error('Recommendations error:', error.message);
+    console.error('Stack:', error.stack);
     return res.status(500).json({ message: 'Scholarship analysis error' });
   }
 });
