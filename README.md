@@ -1,118 +1,127 @@
-# SIT-SCHOLARSHIP 🎓
+# SIT-SCHOLARSHIP
 
 ระบบจัดการและสมัครทุนการศึกษา คณะเทคโนโลยีสารสนเทศ (SIT) มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าธนบุรี (KMUTT)
-พัฒนาขึ้นด้วย React (Vite) + Tailwind CSS สำหรับ Frontend และ Node.js (Express) + MySQL สำหรับ Backend
 
 ---
 
-## 🚀 ฟีเจอร์หลัก (Key Features)
+## ฟีเจอร์หลัก
 
-### สำหรับนักศึกษา (Student)
-- **ระบบดูทุนการศึกษา:** แยกประเภทตามทุนเรียนดี (SIT Merit), ทุนกิจกรรม (SIT Activity), ทุนจ้างงาน (SIT Work), ทุนให้เปล่า (KMUTT Grant), ทุนกู้ยืม (กยศ.) และทุนต่างชาติ (International)
-- **ระบบสมัครทุน:** กรอกข้อมูลการศึกษา อัปโหลดหลักฐานเอกสาร (GPA, กิจกรรม, รูปภาพ/ไฟล์แนบ) และระบุเหตุผลการสมัคร
-- **ระบบแนะนำทุนการศึกษาด้วย AI (Gemini AI):** วิเคราะห์โปรไฟล์นักศึกษา เช่น GPA ชั้นปี และภาควิชา เพื่อแนะนำทุนการศึกษาที่เหมาะสมที่สุด 3 อันดับแรก
-- **ประวัติการสมัคร:** ตรวจสอบและติดตามสถานะการสมัครของตนเอง (อยู่ระหว่างพิจารณา, อนุมัติ, ไม่อนุมัติ)
-- **โปรไฟล์นักศึกษา:** จัดการข้อมูลส่วนตัวและผลการเรียนเฉลี่ยสะสม (GPAX)
+### สำหรับนักศึกษา
+- **ดูทุนการศึกษา** — แยกตามประเภท: ทุนเรียนดี (SIT Merit), ทุนกิจกรรม (SIT Activity), ทุนจ้างงาน (SIT Work), ทุนให้เปล่า (KMUTT Grant), ทุนกู้ยืม (กยศ.), ทุนต่างชาติ (International)
+- **วิเคราะห์ด้วย AI (Gemini)** — แนะนำทุนที่เหมาะสมที่สุด 3 อันดับแรก จากโปรไฟล์ GPA ชั้นปี และสาขา (PDPA-compliant — ไม่ส่งข้อมูลส่วนตัวให้ AI)
+- **สมัครทุนออนไลน์** — กรอกเหตุผลความจำนง แนบเอกสาร PDF และข้อมูลรายได้ครอบครัว
+- **ติดตามสถานะใบสมัคร** — ดูผลการพิจารณา (รอพิจารณา, อนุมัติ, ไม่อนุมัติ)
+- **จัดการโปรไฟล์** — ข้อมูลส่วนตัวแก้ไขได้ (แก้ไขได้: เบอร์, Gmail ที่ยืนยันแล้ว, รายได้ครอบครัว, ผู้ปกครอง — ข้อมูลทะเบียนอ่านอย่างเดียว)
 
-### สำหรับผู้ดูแลระบบ (Administrator)
-- **แดชบอร์ดสรุปผล:** แสดงข้อมูลสถิติจำนวนผู้ใช้งาน ทุนทั้งหมด และจำนวนผู้สมัครทุนแยกตามสถานะ
-- **ระบบจัดการทุน:** สร้าง แก้ไข ปิดรับสมัคร หรือลบทุนการศึกษา
-- **ระบบตรวจสอบคำขอ:** ตรวจสอบรายละเอียดใบสมัคร ดาวน์โหลดเอกสารหลักฐาน และอนุมัติ/ปฏิเสธใบสมัครทุน
-- **ระบบจัดการผู้ใช้งาน:** ตรวจสอบรายชื่อนักศึกษาและประวัติการสมัครทุนทั้งหมด
-
----
-
-## 🛠️ Stack เทคโนโลยี (Tech Stack)
-
-### Frontend
-- **Framework:** React.js (Vite)
-- **Styling:** Tailwind CSS (Navy / Blue Theme)
-- **HTTP Client:** Axios (พร้อม Interceptors สำหรับ Authorization Bearer Token)
-- **Routing:** React Router DOM (พร้อม Protected Route แยกสิทธิ์นักศึกษา/แอดมิน)
-- **Icons:** React Icons
-
-### Backend
-- **Runtime:** Node.js (Express)
-- **Database:** MySQL (เชื่อมต่อผ่าน `mysql2` package)
-- **Authentication:** JSON Web Tokens (JWT) + bcryptjs สำหรับเข้ารหัสรหัสผ่าน
-- **Development Tool:** Nodemon
+### สำหรับผู้ดูแลระบบ
+- **แดชบอร์ดสรุปผล** — สถิติจำนวนผู้ใช้งาน ทุนทั้งหมด และใบสมัครแยกตามสถานะ
+- **จัดการทุน** — สร้าง แก้ไข ปิด/เปิดรับสมัคร หรือลบทุน
+- **ตรวจสอบใบสมัคร** — ดูรายละเอียด ดาวน์โหลดเอกสาร PDF อนุมัติ/ปฏิเสธ
+- **จัดการผู้ใช้** — ค้นหานักศึกษา ดูประวัติการสมัคร เปลี่ยนบทบาท
 
 ---
 
-## 📋 วิธีการติดตั้งและเริ่มใช้งาน (Getting Started)
+## สถาปัตยกรรม
 
-### 1. การเตรียม Database (MySQL)
-1. เปิดใช้บริการ MySQL Server (เช่น ผ่าน XAMPP, Laragon หรือ MySQL Workbench)
-2. สร้างฐานข้อมูลใหม่ชื่อ `sit_scholarship`
-   ```sql
-   CREATE DATABASE sit_scholarship CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   ```
-3. นำเข้าโครงสร้างตารางโดยการรันสคริปต์จากไฟล์ `database/schema.sql` หรือรันผ่าน Terminal:
-   ```bash
-   mysql -u root -p -h localhost -P 3306 < database/schema.sql
-   ```
-   *(หมายเหตุ: สามารถเปลี่ยนโฮสต์และพอร์ต เช่น `-P 3307` ตามสภาพแวดล้อมที่ใช้งานจริง)*
-
-### 2. การตั้งค่า Backend
-1. เข้าไปที่โฟลเดอร์ `backend`:
-   ```bash
-   cd backend
-   ```
-2. ติดตั้ง Dependencies:
-   ```bash
-   npm install
-   ```
-3. สร้างไฟล์ `.env` ในโฟลเดอร์ `backend` และกำหนดค่าดังนี้:
-   ```env
-   PORT=3001
-   DB_HOST=localhost
-   DB_USER=root
-   DB_PASSWORD=your_password
-   DB_NAME=sit_scholarship
-   DB_PORT=3306 # พอร์ตของ MySQL (เช่น 3306 หรือ 3307)
-   JWT_SECRET=sit_kmutt_2024_secret
-   JWT_EXPIRES_IN=24h
-   GEMINI_API_KEY=your_gemini_api_key_here
-   GEMINI_MODEL=gemini-flash-latest
-   ```
-4. รันคำสั่ง Seed ข้อมูลเริ่มต้น (บัญชีผู้ใช้งานจำลองต่าง ๆ + ทุนการศึกษาเริ่มต้น):
-   ```bash
-   node seed.js
-   ```
-5. รัน Backend Server:
-   ```bash
-   npm run dev
-   ```
-   *Backend จะทำงานที่พอร์ต `http://localhost:3001`*
-
-### 3. การตั้งค่า Frontend
-1. เข้าไปที่โฟลเดอร์ `frontend`:
-   ```bash
-   cd ../frontend
-   ```
-2. ติดตั้ง Dependencies:
-   ```bash
-   npm install
-   ```
-3. รัน Frontend Server:
-   ```bash
-   npm run dev
-   ```
-   *Frontend จะทำงานที่พอร์ต `http://localhost:5173`*
+```
+┌─────────────────────────────────────────────────────────┐
+│  Frontend (React/Vite, port 5173)                      │
+│  ├── api/axios.js       — Axios + JWT interceptors     │
+│  ├── context/AuthContext — Auth state                 │
+│  ├── components/       — Navbar, Footer, ScholarshipCard│
+│  └── pages/            — Home, Login, Register,        │
+│                         Scholarships, Apply, Profile,   │
+│                         AdminDashboard, AdminScholarships│
+│                         AdminApplications, AdminUsers   │
+└───────────────────┬─────────────────────────────────────┘
+                    │ HTTP + JWT
+┌───────────────────▼─────────────────────────────────────┐
+│  Backend (Express, port 3001)                          │
+│  ├── routes/auth.js       — Login, Register, Email verify│
+│  ├── routes/users.js      — User CRUD, Dashboard stats │
+│  ├── routes/scholarships.js — Scholarship CRUD, Stats  │
+│  ├── routes/applications.js — Apply, Review, History  │
+│  ├── routes/recommendations.js — AI (Gemini) recommend│
+│  ├── middleware/auth.js   — JWT + authorizeRoles()    │
+│  ├── middleware/validate.js — express-validator       │
+│  └── middleware/upload.js — multer PDF upload          │
+└───────────────────┬─────────────────────────────────────┘
+                    │ mysql2
+              ┌─────▼─────┐
+              │   MySQL   │
+              └───────────┘
+```
 
 ---
 
-## 🔐 บัญชีเข้าทดสอบระบบ (Test Credentials)
+## ประเภททุน (scholarship_type)
+`sit-merit` · `sit-activity` · `sit-work` · `kmutt-grant` · `kmutt-loan` · `kmutt-special` · `international`
 
-### ผู้ดูแลระบบ (Administrator)
-- **Email:** `admin@sit.kmutt.ac.th`
-- **Password:** `admin123`
+## หมวดทุน (category)
+`sit` · `kmutt` · `international`
 
-### คณะกรรมการ (Committee)
-- **Email:** `committee1@sit.kmutt.ac.th`
-- **Password:** `committee123`
+## บทบาทผู้ใช้ (role)
+`student` · `admin` · `committee`
 
-### นักศึกษา (Student)
-- **Email:** `student1@sit.kmutt.ac.th`
-- **Password:** `student123`
-- *(หรือลงทะเบียนสมัครสมาชิกใหม่ผ่านหน้าเว็บได้ทันที)*
+---
+
+## วิธีติดตั้ง
+
+### 1. Database
+```sql
+CREATE DATABASE sit_scholarship CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+จากนั้นรัน migration เพื่อสร้างตาราง:
+```bash
+cd backend && node migrate.js && node seed.js
+```
+
+### 2. Backend
+```bash
+cd backend && npm install
+```
+
+สร้างไฟล์ `.env`:
+```env
+PORT=3001
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=sit_scholarship
+DB_PORT=3306
+JWT_SECRET=sit_kmutt_2024_secret
+JWT_EXPIRES_IN=24h
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-flash-latest
+```
+
+รัน server:
+```bash
+npm run dev
+```
+
+### 3. Frontend
+```bash
+cd frontend && npm install
+npm run dev
+```
+
+---
+
+## บัญชีทดสอบ
+
+| บทบาท | อีเมล | รหัสผ่าน |
+|---|---|---|
+| Admin | admin@sit.kmutt.ac.th | admin123 |
+| Committee | committee1@sit.kmutt.ac.th | committee123 |
+| Student | student1@sit.kmutt.ac.th | student123 |
+
+---
+
+## Tech Stack
+
+**Frontend:** React (Vite) · Tailwind CSS · React Router DOM · Axios · React Icons · react-hot-toast
+
+**Backend:** Node.js (Express) · MySQL (mysql2) · JWT · bcryptjs · express-validator · multer
+
+**AI:** Google Gemini API (สำหรับแนะนำทุน)

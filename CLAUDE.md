@@ -41,8 +41,11 @@ DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=your_password
 DB_NAME=sit_scholarship
+DB_PORT=3306
 JWT_SECRET=sit_kmutt_2024_secret
 JWT_EXPIRES_IN=24h
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-flash-latest
 ```
 
 ## Architecture
